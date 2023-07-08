@@ -1,0 +1,5 @@
+module.tx_dddeepl.settings.apiUrl = https://api.deepl.com
+
+module.tx_dddeepl.settings.apiKey =
+
+module.tx_dddeepl.settings.maximumNumberOfGlossariesPerLanguage = 2
