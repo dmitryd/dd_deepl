@@ -1,7 +1,7 @@
 {
 	"name": "dmitryd/dd-deepl",
 	"type": "typo3-cms-extension",
-	"description": "",
+	"description": "A TYPO3 CMS extension to translate pages, content and records with DeepL",
 	"version": "1.0.0",
 	"require": {
 		"php": ">=8.0.0,<8.2.0",
