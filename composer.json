@@ -6,6 +6,7 @@
 	"require": {
 		"php": ">=8.0.0,<8.2.0",
 		"typo3/cms-core": "^11.5",
+		"typo3/cms-backend": "*",
 		"deeplcom/deepl-php": "^1.5"
 	},
 	"autoload": {
