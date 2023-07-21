@@ -25,8 +25,10 @@ namespace Dmitryd\DdDeepl\Service;
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+use DeepL\DeepLException;
 use DeepL\Translator;
 use DeepL\TranslatorOptions;
+use DeepL\Usage;
 use Dmitryd\DdDeepl\Event\AfterFieldTranslatedEvent;
 use Dmitryd\DdDeepl\Event\AfterRecordTranslatedEvent;
 use Dmitryd\DdDeepl\Event\BeforeFieldTranslationEvent;
@@ -72,6 +74,23 @@ class DeeplTranslationService
             $deeplOptions
         );
         $this->translator = new Translator($this->getApiKey(), $deeplOptions);
+    }
+
+    /**
+     * Checks if DeepL translation is available.
+     *
+     * @return bool
+     */
+    public function isAvailable(): bool
+    {
+        try {
+            // Best alternative to ping function
+            $result = $this->translator->getUsage();
+        } catch (DeepLException) {
+            $result = null;
+        }
+
+        return ($result instanceof Usage) && !$result->anyLimitReached();
     }
 
     /**

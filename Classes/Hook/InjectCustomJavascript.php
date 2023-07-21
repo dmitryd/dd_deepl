@@ -25,9 +25,11 @@ namespace Dmitryd\DdDeepl\Hook;
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+use Dmitryd\DdDeepl\Service\DeeplTranslationService;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Http\ApplicationType;
 use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * This class contains a hook to the PageRenderer that injects our own JS module.
@@ -46,7 +48,10 @@ class InjectCustomJavascript
     {
         $request = $GLOBALS['TYPO3_REQUEST'];
         /** @var ServerRequestInterface $request */
-        if (ApplicationType::fromRequest($request)->isBackend() && ($request->getQueryParams()['route'] ?? '') === '/module/web/layout') {
+        if (ApplicationType::fromRequest($request)->isBackend() &&
+            ($request->getQueryParams()['route'] ?? '') === '/module/web/layout' &&
+            GeneralUtility::makeInstance(DeeplTranslationService::class)->isAvailable()
+        ) {
             $pageRenderer = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Page\PageRenderer::class);
             $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/Localization');
             $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
