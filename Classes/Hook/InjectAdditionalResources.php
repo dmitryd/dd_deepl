@@ -32,11 +32,11 @@ use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
- * This class contains a hook to the PageRenderer that injects our own JS module.
+ * This class contains a hook to the PageRenderer that injects our own JS & CSS in the Backend.
  *
  * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
-class InjectCustomJavascript
+class InjectAdditionalResources
 {
     /**
      * Injects the module with a DeepL button.
@@ -44,7 +44,7 @@ class InjectCustomJavascript
      * @param array $params
      * @param \TYPO3\CMS\Core\Page\PageRenderer $pageRenderer
      */
-    public function injectCustomJavaScript(array $params, PageRenderer $pageRenderer): void
+    public function inject(array $params, PageRenderer $pageRenderer): void
     {
         $request = $GLOBALS['TYPO3_REQUEST'];
         /** @var ServerRequestInterface $request */
