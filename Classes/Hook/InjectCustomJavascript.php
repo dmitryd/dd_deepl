@@ -49,6 +49,7 @@ class InjectCustomJavascript
         if (ApplicationType::fromRequest($request)->isBackend() && ($request->getQueryParams()['route'] ?? '') === '/module/web/layout') {
             $pageRenderer = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Page\PageRenderer::class);
             $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/Localization');
+            $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
         }
     }
 }

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+	<file source-language="en" target-language="fr" datatype="plaintext" original="messages" product-name="ext-dd_deepl">
+		<body>
+			<trans-unit id="TYPO3.lang.localize.wizard.button.deepl">
+				<source>Translate with DeepL</source>
+				<target>Traduire avec DeepL</target>
+			</trans-unit>
+			<trans-unit id="TYPO3.lang.localize.educate.deepl">
+				<source>
+					Translations will be automatically created using DeepL.
+					Translated elements will be connected to elements in the
+					original language. Make sure that you do not send any
+					configudential or sensitive information outsode of your company.
+				</source>
+				<target>
+					Les traductions seront automatiquement créées à l'aide de DeepL.
+					Les éléments traduits seront reliés aux éléments dans la langue
+					langue originale. Veillez à ne pas envoyer d'informations
+					informations confidentielles ou sensibles en dehors de votre entreprise.
+				</target>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>
