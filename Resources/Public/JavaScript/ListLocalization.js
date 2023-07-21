@@ -5,6 +5,7 @@ define('TYPO3/CMS/DdDeepl/ListLocalization', ['jquery'], function ($) {
     let link = newElement.find('a.t3js-action-localize');
     link.attr('href', link.attr('href').replace('%5Blocalize%5D=', '%5Bdeepl%5D='));
     let img = newElement.find('img');
-    img.attr('src', '/typo3conf/ext/dd_deepl/Resources/Public/Images/deepl-seeklogo.com.svg');
+    $('<span class="deepl-icon-overlay"></span>').insertAfter(img.parent().parent());
+    img.css('opacity', 0.65);
   });
 });
