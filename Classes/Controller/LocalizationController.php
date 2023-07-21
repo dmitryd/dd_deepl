@@ -25,51 +25,27 @@ namespace Dmitryd\DdDeepl\Controller;
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
-use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+/**
+ * This class overrides LocalizationController to provide custom handling for DeepL command.
+ *
+ * @author Dmitry Dulepov <support@snowflake.ch>
+ */
 class LocalizationController extends \TYPO3\CMS\Backend\Controller\Page\LocalizationController
 {
     protected const ACTION_DEEPL = 'deepl';
 
     /**
-     * We have to override this because there is a hard-coded check in the original class for allowed actions.
-     *
-     * @param ServerRequestInterface $request
-     * @return ResponseInterface
-     */
-    public function localizeRecords(ServerRequestInterface $request): ResponseInterface
-    {
-        $params = $request->getQueryParams();
-        if (!isset($params['action'])) {
-            return new JsonResponse(null, 400);
-        }
-
-        if ($params['action'] === static::ACTION_DEEPL) {
-            // Fake it
-            $params['action'] = static::ACTION_LOCALIZE;
-            $params['deepl'] = true;
-        }
-
-        return parent::localizeRecords($request->withQueryParams($params));
-    }
-
-    /**
      * Overrides default processing and sends our custom command to the DataHandler.
      *
-     * @param $params
+     * @param array $params
      */
     protected function process($params): void
     {
-        if (!isset($params['deepl'])) {
-            parent::process($params);
-        } else {
-            $cmd = [
-                'tt_content' => [],
-            ];
+        if (($params['deepl'] ?? false) && (string)$params['deepl'] === 'true') {
+            $cmd = [];
 
             if (isset($params['uidList']) && is_array($params['uidList'])) {
                 foreach ($params['uidList'] as $currentUid) {
@@ -81,9 +57,13 @@ class LocalizationController extends \TYPO3\CMS\Backend\Controller\Page\Localiza
                 }
             }
 
-            $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
-            $dataHandler->start([], $cmd);
-            $dataHandler->process_cmdmap();
+            if (count($cmd) > 0) {
+                $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
+                $dataHandler->start([], $cmd);
+                $dataHandler->process_cmdmap();
+            }
+        } else {
+            parent::process($params);
         }
     }
 }
