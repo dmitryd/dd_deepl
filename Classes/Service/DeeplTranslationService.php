@@ -299,6 +299,12 @@ class DeeplTranslationService
         return $fieldValue;
     }
 
+    /**
+     * Deepl needs some languages codes to be different from TYPO3 ones. This method updates such codes.
+     *
+     * @param string $languageCode
+     * @return string
+     */
     protected function updateLanguageCode(string $languageCode): string
     {
         return $languageCode === 'en' ? 'en-US' : $languageCode;
