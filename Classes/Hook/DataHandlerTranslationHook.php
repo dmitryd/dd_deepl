@@ -35,7 +35,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * This class contains a hook to translate records using DeepL
- * when translation happoens via DataHandler.
+ * when translation happens via DataHandler.
  *
  * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
