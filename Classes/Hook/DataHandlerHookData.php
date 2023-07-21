@@ -34,7 +34,7 @@ use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
  * instance. Such approach saves us from examinining all kind internal
  * TYPO3 request parameters that can change in any version.
  *
- * @author Dmitry Dulepov <support@snowflake.ch>
+ * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  * @internal
  */
 final class DataHandlerHookData

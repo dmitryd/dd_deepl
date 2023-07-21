@@ -34,7 +34,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 /**
  * This class contains a hook to the PageRenderer that injects our own JS module.
  *
- * @author Dmitry Dulepov <support@snowflake.ch>
+ * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
 class InjectCustomJavascript
 {

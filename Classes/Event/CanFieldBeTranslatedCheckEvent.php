@@ -34,7 +34,7 @@ namespace Dmitryd\DdDeepl\Event;
  * - null = no idea
  * You can only set true or false with this event.
  *
- * @author Dmitry Dulepov <support@snowflake.ch>
+ * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
 class CanFieldBeTranslatedCheckEvent
 {

@@ -31,7 +31,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 /**
  * This class overrides LocalizationController to provide custom handling for DeepL command.
  *
- * @author Dmitry Dulepov <support@snowflake.ch>
+ * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
 class LocalizationController extends \TYPO3\CMS\Backend\Controller\Page\LocalizationController
 {

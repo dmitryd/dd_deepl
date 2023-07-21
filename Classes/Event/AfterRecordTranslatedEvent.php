@@ -29,7 +29,7 @@ namespace Dmitryd\DdDeepl\Event;
  * This event will fire after the record is translated to do any necessary
  * post-processing after the translation.
  *
- * @author Dmitry Dulepov <support@snowflake.ch>
+ * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
 final class AfterRecordTranslatedEvent
 {

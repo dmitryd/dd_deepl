@@ -31,7 +31,7 @@ use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
  * This event will fire before the record is translated to do any necessary
  * pre-processing before the translation.
  *
- * @author Dmitry Dulepov <support@snowflake.ch>
+ * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
 final class BeforeFieldTranslationEvent
 {

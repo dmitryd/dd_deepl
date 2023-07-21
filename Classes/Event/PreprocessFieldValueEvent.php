@@ -30,7 +30,7 @@ namespace Dmitryd\DdDeepl\Event;
  * is translated to do any necessary pre-processing of the field value.
  * Possible usage: remove some html tags, etc.
  *
- * @author Dmitry Dulepov <support@snowflake.ch>
+ * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
 class PreprocessFieldValueEvent
 {
