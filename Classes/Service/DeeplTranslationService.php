@@ -84,7 +84,7 @@ class DeeplTranslationService
     public function isAvailable(): bool
     {
         try {
-            // Best alternative to ping function
+            // Best alternative to a ping function
             $result = $this->translator->getUsage();
         } catch (DeepLException) {
             $result = null;
