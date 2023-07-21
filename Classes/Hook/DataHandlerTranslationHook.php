@@ -41,13 +41,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class DataHandlerTranslationHook
 {
-    /** @var DataHandlerHookData[] */
-    protected static array $dataHandlerData = [];
-
     /**
-     * Processes our custom command and saves some data for the actual hook.
-     * We have to do it because "processTranslateTo_copyAction" does not provide
-     * useful parameters.
+     * Processes our custom command and translates the record.
      *
      * @param string &$command
      * @param string $tableName
@@ -61,21 +56,10 @@ class DataHandlerTranslationHook
         if ($command === 'deepl') {
             $record = BackendUtility::getRecord($tableName, (int)$recordId);
             if (!empty($record)) {
-                try {
-                    $languageField = $GLOBALS['TCA'][$tableName]['ctrl']['languageField'] ?? false;
-                    if ($languageField) {
-                        $objectHash = spl_object_hash($dataHandler);
-                        self::$dataHandlerData[$objectHash] = $this->getDataHandlerHookData($record, $languageField, $languageId, $tableName);
-                        $this->translateRecord($tableName, $recordId, $languageId, $dataHandler);
-                        unset(self::$dataHandlerData[$objectHash]);
-                        $commandIsProcessed = true;
-                    }
-                } catch (SiteNotFoundException) {
-                    // Nothing to do, record is outside of sites
-                    return;
-                } catch (\InvalidArgumentException) {
-                    // Nothing to do - language does not exist
-                    return;
+                $languageField = $GLOBALS['TCA'][$tableName]['ctrl']['languageField'] ?? false;
+                if ($languageField) {
+                    $this->translateRecord($tableName, $record, $languageId, $dataHandler);
+                    $commandIsProcessed = true;
                 }
             }
             if (!$commandIsProcessed) {
@@ -83,69 +67,6 @@ class DataHandlerTranslationHook
                 $command = 'localize';
             }
         }
-    }
-
-    /**
-     * Translates the value to a required language.
-     *
-     * @param mixed $fieldValue
-     * @param array $targetLanguage
-     * @param \TYPO3\CMS\Core\DataHandling\DataHandler $dataHandler
-     * @param string $fielfdName
-     */
-    public function processTranslateTo_copyAction(mixed &$fieldValue, /** @noinspection PhpUnusedParameterInspection */ array $targetLanguage, DataHandler $dataHandler, string $fielfdName): void
-    {
-        $data = self::$dataHandlerData[spl_object_hash($dataHandler)] ?? new DataHandlerHookData();
-        if ($data->isTranslationEnabled() && is_string($fieldValue)) {
-            try {
-                $fieldValue = GeneralUtility::makeInstance(DeeplTranslationService::class)->translateField(
-                    $data->getTableName(),
-                    $fielfdName,
-                    $fieldValue,
-                    $data->getSourceLanguage(),
-                    $data->getTargetLanguage()
-                );
-            } catch (DeepLException $exception) {
-                $error = sprintf(
-                    'Error while translating with DeepL: [%d] %s. Stack: %s',
-                    $exception->getCode(),
-                    $exception->getMessage(),
-                    $exception->getTraceAsString()
-                );
-                $dataHandler->log(
-                    $data->getTableName(),
-                    $data->getRecord()['uid'],
-                    2,
-                    $data->getRecord()['pid'],
-                    1,
-                    $error
-                );
-                $dataHandler->errorLog[] = $error;
-            }
-        }
-    }
-
-    /**
-     * ${CARET}
-     *
-     * @param array|null $record
-     * @param mixed $languageField
-     * @param mixed $languageId
-     * @param string $tableName
-     * @return \Dmitryd\DdDeepl\Hook\DataHandlerHookData
-     * @throws \TYPO3\CMS\Core\Exception\SiteNotFoundException
-     */
-    protected function getDataHandlerHookData(?array $record, mixed $languageField, mixed $languageId, string $tableName): DataHandlerHookData
-    {
-        $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($record['pid']);
-        $data = new DataHandlerHookData();
-        $data->setSourceLanguage($site->getLanguageById((int)$record[$languageField]));
-        $data->setTargetLanguage($site->getLanguageById((int)$languageId));
-        $data->setTableName($tableName);
-        $data->setRecord($record);
-        $data->setTranslationEnabled(true);
-
-        return $data;
     }
 
     /**
@@ -180,19 +101,58 @@ class DataHandlerTranslationHook
     }
 
     /**
+     * Translates fields of the record localized by TYPO3.
+     *
+     * @param string $tableName
+     * @param array $record
+     * @param mixed $languageId
+     * @param \TYPO3\CMS\Core\DataHandling\DataHandler $dataHandler
+     */
+    protected function translateLocalizedRecordFields(string $tableName, array $record, mixed $languageId, DataHandler $dataHandler): void
+    {
+        list($translation) = BackendUtility::getRecordLocalization($tableName, $record['uid'], $languageId);
+        if ($translation) {
+            try {
+                $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($record['pid']);
+                $targetLanguage = $site->getLanguageById($languageId);
+            } catch (SiteNotFoundException) {
+                // Nothing to do, record is outside of sites
+                return;
+            } catch (\InvalidArgumentException) {
+                // Nothing to do - language does not exist on the site but the record has it
+                return;
+            }
+            try {
+                $data = [
+                    $tableName => [
+                        $translation['uid'] => GeneralUtility::makeInstance(DeeplTranslationService::class)->translateRecord($tableName, $record, $targetLanguage),
+                    ]
+                ];
+                $localDataHandler = GeneralUtility::makeInstance(DataHandler::class);
+                $localDataHandler->start($data, [], $dataHandler->BE_USER);
+                $localDataHandler->process_datamap();
+            } catch (DeepLException) {
+                // TODO Logging here about failure reasons
+            }
+        }
+    }
+
+    /**
      * Translates the record using DataHandler. DataHandler will call our hook for each field that needs to be
      * translated.
      *
      * @param string $tableName
-     * @param mixed $recordId
+     * @param array $record
      * @param mixed $languageId
      * @param \TYPO3\CMS\Core\DataHandling\DataHandler $dataHandler
      */
-    protected function translateRecord(string $tableName, mixed $recordId, mixed $languageId, DataHandler $dataHandler): void
+    protected function translateRecord(string $tableName, array $record, mixed $languageId, DataHandler $dataHandler): void
     {
         $originalUseTransOrigPointerField = $this->getUseTransOrigPointerField($dataHandler);
         $this->setUseTransOrigPointerField($dataHandler, true);
-        $dataHandler->localize($tableName, $recordId, $languageId);
+        $dataHandler->localize($tableName, $record['uid'], $languageId);
         $this->setUseTransOrigPointerField($dataHandler, $originalUseTransOrigPointerField);
+
+        $this->translateLocalizedRecordFields($tableName, $record, $languageId, $dataHandler);
     }
 }
