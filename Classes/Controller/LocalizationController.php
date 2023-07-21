@@ -35,8 +35,6 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class LocalizationController extends \TYPO3\CMS\Backend\Controller\Page\LocalizationController
 {
-    protected const ACTION_DEEPL = 'deepl';
-
     /**
      * Overrides default processing and sends our custom command to the DataHandler.
      *
