@@ -1,8 +1,17 @@
 diff --git a/Build/Sources/TypeScript/backend/Resources/Public/TypeScript/Localization.ts b/Build/Sources/TypeScript/backend/Resources/Public/TypeScript/Localization.ts
-index ec0ebcf476..e7b19ac0bf 100644
+index ec0ebcf476..67b12dbe28 100644
 --- a/Build/Sources/TypeScript/backend/Resources/Public/TypeScript/Localization.ts
 +++ b/Build/Sources/TypeScript/backend/Resources/Public/TypeScript/Localization.ts
-@@ -13,10 +13,10 @@
+@@ -9,14 +9,19 @@
+  * LICENSE.txt file that was distributed with this source code.
+  *
+  * The TYPO3 project - inspiring people to share!
++ *
++ * --------
++ * This file is a modified TYPO3 core source file.
++ * See EXT:dd_deepl/Resources/Private/Patches/core_v11.patch for source.
++ * --------
+  */
  
  import $ from 'jquery';
  import {AjaxResponse} from 'TYPO3/CMS/Core/Ajax/AjaxResponse';
@@ -16,7 +25,7 @@ index ec0ebcf476..e7b19ac0bf 100644
  
  type LanguageRecord = {
    uid: number;
-@@ -58,6 +58,8 @@ class Localization {
+@@ -58,6 +63,8 @@ class Localization {
        Icons.getIcon('actions-edit-copy', Icons.sizes.large).then((copyIconMarkup: string): void => {
          $(me.triggerButton).removeClass('disabled');
  
@@ -25,7 +34,7 @@ index ec0ebcf476..e7b19ac0bf 100644
          $(document).on('click', me.triggerButton, (e: JQueryEventObject): void => {
            e.preventDefault();
  
-@@ -81,6 +83,21 @@ class Localization {
+@@ -81,6 +88,21 @@ class Localization {
                + '</div>',
              );
              availableLocalizationModes.push('localize');
@@ -47,7 +56,7 @@ index ec0ebcf476..e7b19ac0bf 100644
            }
  
            if ($triggerButton.data('allowCopy')) {
-@@ -373,8 +390,9 @@ class Localization {
+@@ -373,8 +395,9 @@ class Localization {
        pageId: pageId,
        srcLanguageId: this.sourceLanguage,
        destLanguageId: languageId,
