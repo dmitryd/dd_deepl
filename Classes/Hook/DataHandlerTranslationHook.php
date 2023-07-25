@@ -35,69 +35,61 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * This class contains a hook to translate records using DeepL
- * when translation happens via DataHandler.
+ * when translation happens via DataHandler.  It uses a request,
+ * so if you want to use DeepL service automatically
+ * with DataHandler, you have to fake it like:
+ *
+ *   $originalRequest = $GLOBALS['TYPO3_REQUEST'];
+ *   $queryParams = $request->getQueryParams();
+ *   $queryParams['deepl'] = 1;
+ *   $GLOBALS['TYPO3_REQUEST'] = $request->withQueryParams($queryParams);
+ *   $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
+ *   $dataHandler->start([], $commandMap);
+ *   $dataHandler->process_cmdmap();
+ *   $GLOBALS['TYPO3_REQUEST'] = $originalRequest;
  *
  * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
 class DataHandlerTranslationHook
 {
     /**
-     * Processes our custom command and translates the record.
+     * Processes our custom command and translates the record. Translations
+     * have to happen in the post-process hook because of EXT:container,
+     * who does certain changes to the pre-process hooks and we cannot guarantee
+     * that their changhes will happen before ours. Thus we use a post-processing hook.
      *
-     * @param string &$command
+     * @param string $command
      * @param string $tableName
      * @param int $recordId
      * @param int $languageId
-     * @param bool &$commandIsProcessed
      * @param \TYPO3\CMS\Core\DataHandling\DataHandler $dataHandler
      */
-    public function processCmdmap(string &$command, string $tableName, mixed $recordId, mixed $languageId, bool &$commandIsProcessed, DataHandler $dataHandler): void
+    public function processCmdmap_postProcess(string $command, string $tableName, mixed $recordId, mixed $languageId, DataHandler $dataHandler): void
     {
-        if ($command === 'deepl') {
+        if ($command === 'localize' && $this->isDeeplRequest()) {
             $record = BackendUtility::getRecord($tableName, (int)$recordId);
             if (!empty($record)) {
                 $languageField = $GLOBALS['TCA'][$tableName]['ctrl']['languageField'] ?? false;
                 if ($languageField) {
-                    $this->translateRecord($tableName, $record, $languageId, $dataHandler);
-                    $commandIsProcessed = true;
+                    $this->translateLocalizedRecordFields($tableName, $record, $languageId, $dataHandler);
                 }
-            }
-            if (!$commandIsProcessed) {
-                // We could not do it, revert to the standard handling (most likely useless but there is always a chance)
-                $command = 'localize';
             }
         }
     }
 
     /**
-     * Gets the protected $useTransOrigPointerField from the DataHandler, which we need to save to
-     * successfully call $dataHandler->localize().
+     * Checks if this is a DeepL request.
      *
-     * @param \TYPO3\CMS\Core\DataHandling\DataHandler $dataHandler
      * @return bool
      */
-    protected function getUseTransOrigPointerField(DataHandler $dataHandler): bool
+    protected function isDeeplRequest(): bool
     {
-        $getter = function (): bool {
-            /** @noinspection PhpUndefinedFieldInspection */
-            return (bool)$this->useTransOrigPointerField;
-        };
-        return $getter->call($dataHandler);
-    }
+        $request = $GLOBALS['TYPO3_REQUEST'];
+        /** @var \TYPO3\CMS\Core\Http\ServerRequest $request */
+        $queryParams = $request->getQueryParams() ?? [];
+        $parsedBody = $request->getParsedBody() ?? [];
 
-    /**
-     * Sets the protected $useTransOrigPointerField from the DataHandler for $dataHandler->localize().
-     *
-     * @param \TYPO3\CMS\Core\DataHandling\DataHandler $dataHandler
-     * @param bool $useTransOrigPointerField
-     */
-    protected function setUseTransOrigPointerField(DataHandler $dataHandler, bool $useTransOrigPointerField): void
-    {
-        $setter = function (bool $useTransOrigPointerField): void {
-            /** @noinspection PhpDynamicFieldDeclarationInspection */
-            $this->useTransOrigPointerField = $useTransOrigPointerField;
-        };
-        $setter->call($dataHandler, $useTransOrigPointerField);
+        return ($queryParams['deepl'] ?? false) || ($parsedBody['deepl'] ?? false);
     }
 
     /**
@@ -135,24 +127,5 @@ class DataHandlerTranslationHook
                 // TODO Logging here about failure reasons
             }
         }
-    }
-
-    /**
-     * Translates the record using DataHandler. DataHandler will call our hook for each field that needs to be
-     * translated.
-     *
-     * @param string $tableName
-     * @param array $record
-     * @param mixed $languageId
-     * @param \TYPO3\CMS\Core\DataHandling\DataHandler $dataHandler
-     */
-    protected function translateRecord(string $tableName, array $record, mixed $languageId, DataHandler $dataHandler): void
-    {
-        $originalUseTransOrigPointerField = $this->getUseTransOrigPointerField($dataHandler);
-        $this->setUseTransOrigPointerField($dataHandler, true);
-        $dataHandler->localize($tableName, $record['uid'], $languageId);
-        $this->setUseTransOrigPointerField($dataHandler, $originalUseTransOrigPointerField);
-
-        $this->translateLocalizedRecordFields($tableName, $record, $languageId, $dataHandler);
     }
 }
