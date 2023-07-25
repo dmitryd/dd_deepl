@@ -54,13 +54,12 @@ class InjectAdditionalResources
             if (($request->getQueryParams()['route'] ?? '') === '/module/web/layout') {
                 // Page module
                 $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/Localization');
-                $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
             } else {
                 // We could limit to "/module/web/list" but than EXT:news administration module will not get translation button, so we just add to all
                 $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/ListLocalization');
-                $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
                 $pageRenderer->addCssFile('EXT:dd_deepl/Resources/Public/Css/DdDeepl.css');
             }
+            $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
         }
     }
 }
