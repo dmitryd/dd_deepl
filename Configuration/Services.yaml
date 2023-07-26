@@ -6,3 +6,11 @@ services:
 
   Dmitryd\DdDeepl\:
     resource: '../Classes/*'
+
+  Dmitryd\DdDeepl\Command\ManageDeeplGlossariesCommand:
+    tags:
+      - name: 'console.command'
+        command: 'deepl:glossary'
+        description: 'Uploads, downloads, lists, or deletes DeepL glossaries using account settings in the current TYPO3 version'
+        hidden: false
+        schedulable: false
