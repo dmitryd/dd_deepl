@@ -26,6 +26,9 @@ namespace Dmitryd\DdDeepl\Service;
 ***************************************************************/
 
 use DeepL\DeepLException;
+use DeepL\GlossaryEntries;
+use DeepL\GlossaryInfo;
+use DeepL\GlossaryLanguagePair;
 use DeepL\Translator;
 use DeepL\TranslatorOptions;
 use DeepL\Usage;
@@ -77,6 +80,82 @@ class DeeplTranslationService
     }
 
     /**
+     * Creates a new glossary on DeepL server with given name, languages, and entries
+     *
+     * @param string $name User-defined name to assign to the glossary.
+     * @param string $sourceLanguageIsoCode Language code of the glossary source terms
+     * @param string $targetLanguageIsoCode Language code of the glossary target terms
+     * @param GlossaryEntries $entries The source- & target-term pairs to add to the glossary
+     * @return GlossaryInfo Details about the created glossary.
+     * @throws DeepLException
+     */
+    public function createGlossary(string $name, string $sourceLanguageIsoCode, string $targetLanguageIsoCode, GlossaryEntries $entries): GlossaryInfo
+    {
+        return $this->translator->createGlossary($name, $sourceLanguageIsoCode, $targetLanguageIsoCode, $entries);
+    }
+
+    /**
+     * Creates a new glossary on DeepL server with given name, languages, and entries.
+     *
+     * @param string $name User-defined name to assign to the glossary
+     * @param string $sourceLanguageIsoCode Language code of the glossary source terms
+     * @param string $targetLanguageIsoCode Language code of the glossary target terms
+     * @param string $csvContent String containing CSV content
+     * @return GlossaryInfo
+     * @throws DeepLException
+     */
+    public function createGlossaryFromCsv(string $name, string $sourceLanguageIsoCode, string $targetLanguageIsoCode, string $csvContent): GlossaryInfo
+    {
+        return $this->translator->createGlossaryFromCsv($name, $sourceLanguageIsoCode, $targetLanguageIsoCode, $csvContent);
+    }
+
+    /**
+     * Deletes the glossary by id.
+     *
+     * @param string $glossaryId
+     * @throws \DeepL\DeepLException
+     */
+    public function deleteGlossary(string $glossaryId)
+    {
+        $this->translator->deleteGlossary($glossaryId);
+    }
+
+    /**
+     * Gets information about an existing glossary
+     *
+     * @param string $glossaryId Glossary ID of the glossary
+     * @return GlossaryInfo GlossaryInfo containing details about the glossary
+     * @throws DeepLException
+     */
+    public function getGlossary(string $glossaryId): GlossaryInfo
+    {
+        return $this->translator->getGlossary($glossaryId);
+    }
+
+    /**
+     * Retrieves the entries stored with the glossary with the given glossary ID
+     *
+     * @param string $glossaryId Glossary ID of the glossary
+     * @return string[]
+     * @throws DeepLException
+     */
+    public function getGlossaryEntries(string $glossaryId): array
+    {
+        return $this->translator->getGlossaryEntries($glossaryId)->getEntries();
+    }
+
+    /**
+     * Queries languages supported for glossaries by the DeepL API
+     *
+     * @return GlossaryLanguagePair[]
+     * @throws DeepLException
+     */
+    public function getGlossaryLanguages(): array
+    {
+        return $this->translator->getGlossaryLanguages();
+    }
+
+    /**
      * Checks if DeepL translation is available.
      *
      * @return bool
@@ -91,6 +170,16 @@ class DeeplTranslationService
         }
 
         return ($result instanceof Usage) && !$result->anyLimitReached();
+    }
+
+    /**
+     * Gets information about all existing glossaries.
+     * @return GlossaryInfo[] Array of GlossaryInfos containing details about all existing glossaries.
+     * @throws DeepLException
+     */
+    public function listGlossaries(): array
+    {
+        return $this->translator->listGlossaries();
     }
 
     /**
