@@ -26,6 +26,8 @@ namespace Dmitryd\DdDeepl\Command;
 ***************************************************************/
 
 use DeepL\DeepLException;
+use DeepL\GlossaryInfo;
+use DeepL\GlossaryLanguagePair;
 use Dmitryd\DdDeepl\Configuration\Configuration;
 use Dmitryd\DdDeepl\Service\DeeplTranslationService;
 use LucidFrame\Console\ConsoleTable;
@@ -56,10 +58,6 @@ class ManageDeeplGlossariesCommand extends Command
     /** @inheritDoc */
     protected function configure()
     {
-        if (!defined('TAB')) {
-            define('TAB', "\t");
-        }
-
         $this->setDescription('Manage DeepL glossaries');
 
         $this->addUsage(
@@ -115,6 +113,132 @@ class ManageDeeplGlossariesCommand extends Command
     }
 
     /**
+     * Adds a new glossary.
+     *
+     * @return int
+     */
+    public function addAction(): int
+    {
+        if (!$this->checkRequiredAddOptions()) {
+            return 1;
+        }
+
+        $fileName = $this->input->getOption('file');
+        $name = $this->input->getOption('name');
+        $sourceLanguage = $this->input->getOption('source-language');
+        $targetLanguage = $this->input->getOption('target-language');
+
+        if (!$this->checkMaximumGlossaryCount($sourceLanguage, $targetLanguage)) {
+            return 1;
+        }
+
+        try {
+            $glossaryInfo = $this->deeplTranslationService->createGlossaryFromCsv(
+                $name,
+                $sourceLanguage,
+                $targetLanguage,
+                file_get_contents($fileName)
+            );
+            $this->output->writeln('Created a new glossary with id=' . $glossaryInfo->glossaryId);
+        } catch (DeepLException $exception) {
+            $this->output->writeln('Could not create a glossary. DeepL tells me this: ' . $exception->getMessage());
+        }
+
+        return 0;
+    }
+
+    /**
+     * Checks that only allowed number of glossaries exists.
+     *
+     * @param string $sourceLanguage
+     * @param string $targetLanguage
+     * @return bool
+     */
+    protected function checkMaximumGlossaryCount(string $sourceLanguage, string $targetLanguage): bool
+    {
+        $existingGlossaries = $this->getGlossariesForLanguagePair($sourceLanguage, $targetLanguage);
+        if (count($existingGlossaries) >= $this->configuration->getMaximumNumberOfGlossaries()) {
+            $this->output->writeln(
+                sprintf(
+                    'Could not add a new glossary because there are %d already and only %d is allowed. ' .
+                        'Use "info" command to see your existing glossaries and remove unnecessary ones using "delete" command.',
+                    count($existingGlossaries),
+                    $this->configuration->getMaximumNumberOfGlossaries()
+                )
+            );
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks that upload options are correct.
+     *
+     * @return bool
+     */
+    protected function checkRequiredAddOptions(): bool
+    {
+        $options = [
+            'file',
+            'name',
+            'source-language',
+            'target-language',
+        ];
+
+        $result = true;
+
+        foreach ($options as $option) {
+            if (!$this->input->hasOption($option)) {
+                $this->output->writeln('Error: option "--' . $option . '" is required.');
+                $result = false;
+            }
+        }
+
+        if (!file_exists($this->input->getOption('file'))) {
+            $this->output->writeln('Error: file does not exist.');
+            $result = false;
+        }
+
+        $sourceLanguage = $this->input->getOption('source-language');
+        $targetLanguage = $this->input->getOption('target-language');
+        $languages = $this->deeplTranslationService->getGlossaryLanguages();
+        $filterFunction = function (GlossaryLanguagePair $pair) use ($sourceLanguage, $targetLanguage): bool {
+            return $pair->sourceLang === $sourceLanguage && $pair->targetLang === $targetLanguage;
+        };
+        if (count(array_filter($languages, $filterFunction)) === 0) {
+            $this->output->writeln('Error: source/target combination is not valid');
+            $result = false;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Deletes the glossary.
+     *
+     * @return int
+     */
+    protected function deleteAction(): int
+    {
+        $glossaryId = $this->input->getOption('id');
+        if (empty($glossaryId)) {
+            $this->output->writeln('Glossary id is required (-i option). Try --help for more information.');
+            return 1;
+        }
+
+        try {
+            $this->deeplTranslationService->deleteGlossary($glossaryId);
+            $this->output->writeln('Glossary with id ' . $glossaryId . ' was deleted');
+        } catch (DeepLException $exception) {
+            $this->output->writeln('Cannot delete this glossary. This is what DeepL tells me: ' . $exception->getMessage());
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /**
      * Fetches the glossary.
      *
      * @return int
@@ -161,6 +285,26 @@ class ManageDeeplGlossariesCommand extends Command
         $this->output->writeln($table->getTable());
 
         return 0;
+    }
+
+    /**
+     * Fetches all glossaries for the given language pair
+     *
+     * @param string $sourceLanguage
+     * @param string $targetLanguage
+     * @return GlossaryInfo[]
+     */
+    protected function getGlossariesForLanguagePair(string $sourceLanguage, string $targetLanguage): array
+    {
+        try {
+            $glossaries = $this->deeplTranslationService->listGlossaries();
+        } catch (DeepLException) {
+            return [];
+        }
+
+        return array_filter($glossaries, function (GlossaryInfo $glossaryInfo) use ($sourceLanguage, $targetLanguage): bool {
+            return $glossaryInfo->sourceLang === $sourceLanguage && $glossaryInfo->targetLang === $targetLanguage;
+        });
     }
 
     /**
