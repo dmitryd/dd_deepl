@@ -71,7 +71,7 @@ class DeeplTranslationService
 
         $deeplOptions = array_merge(
             [
-                TranslatorOptions::SERVER_URL => $this->configuration->getApiHost(),
+                TranslatorOptions::SERVER_URL => $this->configuration->getApiUrl(),
             ],
             $deeplOptions
         );

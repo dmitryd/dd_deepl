@@ -36,7 +36,7 @@ use TYPO3\CMS\Extbase\Configuration\BackendConfigurationManager;
  */
 class Configuration
 {
-    protected string $apiHost = 'https://api.deepl.com';
+    protected string $apiUrl = 'https://api.deepl.com';
 
     protected string $apiKey = '';
 
@@ -51,7 +51,7 @@ class Configuration
         $ts = $configurationManager->getConfiguration('dddeepl');
         $ts = GeneralUtility::makeInstance(TypoScriptService::class)->convertPlainArrayToTypoScriptArray($ts);
 
-        $this->apiHost = $configurationManager->getContentObject()->stdWrap(
+        $this->apiUrl = $configurationManager->getContentObject()->stdWrap(
             $ts['settings.']['apiUrl'] ?? '',
             $ts['settings.']['apiUrl.'] ?? [],
         );
@@ -69,9 +69,9 @@ class Configuration
      *
      * @return string
      */
-    public function getApiHost(): string
+    public function getApiUrl(): string
     {
-        return $this->apiHost;
+        return $this->apiUrl;
     }
 
     /**
@@ -101,6 +101,6 @@ class Configuration
      */
     public function isConfigured(): bool
     {
-        return !empty($this->getApiKey()) && !empty($this->getApiHost());
+        return !empty($this->getApiKey()) && !empty($this->getApiUrl());
     }
 }
