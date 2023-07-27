@@ -32,6 +32,7 @@ use DeepL\GlossaryLanguagePair;
 use DeepL\Translator;
 use DeepL\TranslatorOptions;
 use DeepL\Usage;
+use Dmitryd\DdDeepl\Configuration\Configuration;
 use Dmitryd\DdDeepl\Event\AfterFieldTranslatedEvent;
 use Dmitryd\DdDeepl\Event\AfterRecordTranslatedEvent;
 use Dmitryd\DdDeepl\Event\BeforeFieldTranslationEvent;
@@ -42,9 +43,7 @@ use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Site\SiteFinder;
-use TYPO3\CMS\Core\TypoScript\TypoScriptService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Configuration\BackendConfigurationManager;
 
 /**
  * This class contains a service to translate records and texts in TYPO3.
@@ -53,7 +52,7 @@ use TYPO3\CMS\Extbase\Configuration\BackendConfigurationManager;
  */
 class DeeplTranslationService
 {
-    protected BackendConfigurationManager $configurationManager;
+    protected Configuration $configuration;
 
     protected EventDispatcher $eventDispatcher;
 
@@ -67,16 +66,16 @@ class DeeplTranslationService
      */
     public function __construct(array $deeplOptions = [])
     {
-        $this->configurationManager = GeneralUtility::makeInstance(BackendConfigurationManager::class);
+        $this->configuration = GeneralUtility::makeInstance(Configuration::class);
         $this->eventDispatcher = GeneralUtility::makeInstance(EventDispatcher::class);
 
         $deeplOptions = array_merge(
             [
-                TranslatorOptions::SERVER_URL => $this->getServerUrl(),
+                TranslatorOptions::SERVER_URL => $this->configuration->getApiHost(),
             ],
             $deeplOptions
         );
-        $this->translator = new Translator($this->getApiKey(), $deeplOptions);
+        $this->translator = new Translator($this->configuration->getApiKey(), $deeplOptions);
     }
 
     /**
@@ -326,21 +325,6 @@ class DeeplTranslationService
     }
 
     /**
-     * Fetches the API key for the service.
-     *
-     * @return string
-     */
-    protected function getApiKey(): string
-    {
-        $ts = $this->configurationManager->getConfiguration('dddeepl');
-        $ts = GeneralUtility::makeInstance(TypoScriptService::class)->convertPlainArrayToTypoScriptArray($ts);
-        return $this->configurationManager->getContentObject()->stdWrap(
-            $ts['settings.']['apiKey'] ?? '',
-            $ts['settings.']['apiKey.'] ?? [],
-        );
-    }
-
-    /**
      * Gets the two letter language code from the record.
      *
      * @param string $tableName
@@ -367,21 +351,6 @@ class DeeplTranslationService
         }
 
         return $result;
-    }
-
-    /**
-     * Fetches the server url.
-     *
-     * @return string
-     */
-    protected function getServerUrl(): string
-    {
-        $ts = $this->configurationManager->getConfiguration('dddeepl');
-        $ts = GeneralUtility::makeInstance(TypoScriptService::class)->convertPlainArrayToTypoScriptArray($ts);
-        return $this->configurationManager->getContentObject()->stdWrap(
-            $ts['settings.']['apiUrl'] ?? '',
-            $ts['settings.']['apiUrl.'] ?? [],
-        );
     }
 
     /**

@@ -26,6 +26,7 @@ namespace Dmitryd\DdDeepl\Command;
 ***************************************************************/
 
 use DeepL\DeepLException;
+use Dmitryd\DdDeepl\Configuration\Configuration;
 use Dmitryd\DdDeepl\Service\DeeplTranslationService;
 use LucidFrame\Console\ConsoleTable;
 use Symfony\Component\Console\Command\Command;
@@ -33,9 +34,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use TYPO3\CMS\Core\TypoScript\TypoScriptService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Configuration\BackendConfigurationManager;
 
 /**
  * This class contains a console command to manage DeepL glossaries.
@@ -46,7 +45,7 @@ class ManageDeeplGlossariesCommand extends Command
 {
     protected const DATE_FORMAT = 'd.m.Y H:i';
 
-    protected array $deepSettings = [];
+    protected Configuration $configuration;
 
     protected DeeplTranslationService $deeplTranslationService;
 
@@ -61,12 +60,6 @@ class ManageDeeplGlossariesCommand extends Command
             define('TAB', "\t");
         }
 
-        $this->deeplTranslationService = GeneralUtility::makeInstance(DeeplTranslationService::class);
-
-        $this->deepSettings = GeneralUtility::makeInstance(TypoScriptService::class)->convertPlainArrayToTypoScriptArray(
-            GeneralUtility::makeInstance(BackendConfigurationManager::class)->getConfiguration('dddeepl')
-        );
-
         $this->setDescription('Manage DeepL glossaries');
 
         $this->addUsage(
@@ -76,9 +69,7 @@ class ManageDeeplGlossariesCommand extends Command
             '  vendor/bin/typo3 deepl:glossary info' . LF .
             '    Fetches information about supported language combinations and existing glossaries.' . LF .
             '  vendor/bin/typo3 deepl:glossary add -f file.csv -g "My glossary" -s en-us -t de' . LF .
-            '    Adds a glossary. Note that maximum ' .
-            (int)$this->deepSettings['settings.']['maximumNumberOfGlossariesPerLanguage'] .
-            'is allowed. The oldest will be deleted if this amount is reached.' . LF .
+            '    Adds a glossary.' . LF .
             '  vendor/bin/typo3 deepl:glossary get -i a1b33a94-ec7e-4ef5-8830-2f7309fab155' . LF .
             '    Fetches the glossary by its id. To see the id use the "info" command. Fetched file will be named according to the id.' . LF .
             '  vendor/bin/typo3 deepl:glossary delete -i a1b33a94-ec7e-4ef5-8830-2f7309fab155' . LF .
@@ -90,6 +81,7 @@ class ManageDeeplGlossariesCommand extends Command
         $this->addOption('file', 'f', InputOption::VALUE_OPTIONAL, 'Glossary in CSV format');
         $this->addOption('id', 'i', InputOption::VALUE_OPTIONAL, 'Glossary id');
         $this->addOption('name', 'g', InputOption::VALUE_OPTIONAL, 'Glossary name');
+        $this->addOption('root', 'r', InputOption::VALUE_OPTIONAL, 'Root page id to use (if your instance has more than one)');
         $this->addOption('source-language', 's', InputOption::VALUE_OPTIONAL, 'Source language');
         $this->addOption('target-language', 't', InputOption::VALUE_OPTIONAL, 'Target language');
     }
@@ -100,13 +92,23 @@ class ManageDeeplGlossariesCommand extends Command
         $this->input = $input;
         $this->output = $output;
 
-        $action = $input->getArgument('action');
-        $method = $action . 'Action';
-        if (method_exists($this, $method)) {
-            $result = $this->{$method}();
-        } else {
-            $this->output->writeln('Unknown command: ' . $action);
+        $this->setRootPageId();
+
+        $this->configuration = GeneralUtility::makeInstance(Configuration::class);
+        $this->deeplTranslationService = GeneralUtility::makeInstance(DeeplTranslationService::class);
+
+        if (!$this->configuration->isConfigured()) {
+            $this->output->writeln('DeepL is not confiured for this site');
             $result = 1;
+        } else {
+            $action = $input->getArgument('action');
+            $method = $action . 'Action';
+            if (method_exists($this, $method)) {
+                $result = $this->{$method}();
+            } else {
+                $this->output->writeln('Unknown command: ' . $action);
+                $result = 2;
+            }
         }
 
         return $result;
@@ -165,7 +167,7 @@ class ManageDeeplGlossariesCommand extends Command
      * Shows information about glossaries.
      *
      * @return int
-     * @noinspection PhpUnusedMethodInspection
+     * @throws \DeepL\DeepLException
      */
     protected function infoAction(): int
     {
@@ -233,5 +235,16 @@ class ManageDeeplGlossariesCommand extends Command
         $this->output->writeln('Glossaries can be created for the following language combinations:');
         $this->output->writeln($table->getTable());
         $this->output->writeln('');
+    }
+
+    /**
+     * Sets the root page for the configuration to use.
+     */
+    protected function setRootPageId(): void
+    {
+        $pid = $this->input->getOption('root');
+        if (!empty($pid)) {
+            $_GET['id'] = $pid;
+        }
     }
 }
