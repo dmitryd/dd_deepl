@@ -27,6 +27,7 @@ namespace Dmitryd\DdDeepl\Hook;
 
 use Dmitryd\DdDeepl\Service\DeeplTranslationService;
 use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Http\ApplicationType;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -51,15 +52,41 @@ class InjectAdditionalResources
         if (ApplicationType::fromRequest($request)->isBackend() &&
             GeneralUtility::makeInstance(DeeplTranslationService::class)->isAvailable()
         ) {
+            $pageTSConfig = BackendUtility::getPagesTSconfig($this->getPageId());
             if (($request->getQueryParams()['route'] ?? '') === '/module/web/layout') {
                 // Page module
-                $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/Localization');
+                if ($pageTSConfig['mod.']['web_layout.']['localization.']['enableDeepL'] ?? true) {
+                    $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/Localization');
+                    $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
+                }
             } else {
-                // We could limit to "/module/web/list" but than EXT:news administration module will not get translation button, so we just add to all
-                $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/ListLocalization');
-                $pageRenderer->addCssFile('EXT:dd_deepl/Resources/Public/Css/DdDeepl.css');
+                // List module
+                if ($pageTSConfig['mod.']['web_list.']['localization.']['enableDeepL'] ?? true) {
+                    // We could limit to "/module/web/list" but than EXT:news administration module will not get translation button, so we just add to all
+                    $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/ListLocalization');
+                    $pageRenderer->addCssFile('EXT:dd_deepl/Resources/Public/Css/DdDeepl.css');
+                    $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
+                }
             }
-            $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
         }
+    }
+
+    /**
+     * Fetches the current page id.
+     *
+     * @return int
+     */
+    protected function getPageId(): int
+    {
+        $pageId = GeneralUtility::_GP('id');
+        if (!$pageId) {
+            $request = $GLOBALS['TYPO3_REQUEST'];
+            /** @var ServerRequestInterface $request */
+            $site = $request->getAttribute('site');
+            /** @var \TYPO3\CMS\Core\Site\Entity\Site $site */
+            $pageId = $site->getRootPageId();
+        }
+
+        return (int)$pageId;
     }
 }
