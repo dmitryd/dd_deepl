@@ -43,7 +43,7 @@ final class BeforeFieldTranslationEvent
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
      * @param array $exceptFieldNames
      */
-    public function __construct(protected string $tableName, protected string $fieldName, protected string $fieldValue, protected SiteLanguage $sourceLanguage, protected SiteLanguage $targetLanguage)
+    public function __construct(protected string $tableName, protected string $fieldName, protected string $fieldValue, protected SiteLanguage $targetLanguage)
     {
     }
 
@@ -75,16 +75,6 @@ final class BeforeFieldTranslationEvent
     public function getFieldValue(): string
     {
         return $this->fieldValue;
-    }
-
-    /**
-     * Fetches the source language.
-     *
-     * @return \TYPO3\CMS\Core\Site\Entity\SiteLanguage
-     */
-    public function getSourceLanguage(): SiteLanguage
-    {
-        return $this->sourceLanguage;
     }
 
     /**
