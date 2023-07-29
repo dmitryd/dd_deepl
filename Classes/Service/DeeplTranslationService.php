@@ -218,7 +218,7 @@ class DeeplTranslationService
             }
         }
 
-        $event = GeneralUtility::makeInstance(AfterRecordTranslatedEvent::class, $tableName, $record, $translatedFields);
+        $event = GeneralUtility::makeInstance(AfterRecordTranslatedEvent::class, $tableName, $record, $targetLanguage, $translatedFields);
         $this->eventDispatcher->dispatch($event);
         /** @noinspection PhpUnnecessaryLocalVariableInspection */
         $translatedFields = $event->getTranslatedFields();

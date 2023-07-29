@@ -2,6 +2,8 @@
 
 namespace Dmitryd\DdDeepl\Event;
 
+use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
+
 /***************************************************************
 *  Copyright notice
 *
@@ -40,7 +42,7 @@ final class AfterRecordTranslatedEvent
      * @param array $record
      * @param array $translatedFields
      */
-    public function __construct(protected string $tableName, protected array $record, protected array $translatedFields)
+    public function __construct(protected string $tableName, protected array $record, protected SiteLanguage $targetLanguage, protected array $translatedFields)
     {
     }
 
@@ -62,6 +64,16 @@ final class AfterRecordTranslatedEvent
     public function getRecord(): array
     {
         return $this->record;
+    }
+
+    /**
+     * Fetches the target language.
+     *
+     * @return \TYPO3\CMS\Core\Site\Entity\SiteLanguage
+     */
+    public function getTargetLanguage(): SiteLanguage
+    {
+        return $this->targetLanguage;
     }
 
     /**
