@@ -212,7 +212,7 @@ class DeeplTranslationService implements SingletonInterface
             $sourceLanguage = $this->getRecordSourceLanguage($tableName, $record);
             foreach ($record as $fieldName => $fieldValue) {
                 if (isset($GLOBALS['TCA'][$tableName]['columns'][$fieldName]) && !in_array($fieldName, $exceptFieldNames)) {
-                    $config = $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config'];
+                    $config = $GLOBALS['TCA'][$tableName]['columns'][$fieldName];
                     if ($this->canFieldBeTranslated($tableName, $fieldName, $fieldValue, $config)) {
                         $translatedFields[$fieldName] = $this->translateField(
                             $tableName,
@@ -301,25 +301,27 @@ class DeeplTranslationService implements SingletonInterface
 
         if (empty($fieldValue)) {
             $result = false;
-        } elseif (isset($tcaConfiguration['translateWithDeepl']) && $tcaConfiguration['translateWithDeepl']) {
+        } elseif (($tcaConfiguration['l10n_mode'] ?? '') === 'exclude') {
+            $result = false;
+        } elseif ($tcaConfiguration['translateWithDeepl'] ?? false) {
             $result = true;
-        } elseif ($tcaConfiguration['type'] === 'input') {
+        } elseif ($tcaConfiguration['config']['type'] === 'input') {
             $result = true;
             if (isset($tcaConfiguration['renderType']) && $tcaConfiguration['renderType'] !== 'default') {
                 // Not the usual input
                 $result = false;
             }
-            if (isset($tcaConfiguration['valuePicker'])) {
+            if (isset($tcaConfiguration['config']['valuePicker'])) {
                 // Value picker
                 $result = false;
             }
-            if (isset($tcaConfiguration['eval']) && preg_match('/alphanum|domainname|double2|int|is_in|md5|nospace|num|password|year/i', $tcaConfiguration['eval'])) {
+            if (isset($tcaConfiguration['config']['eval']) && preg_match('/alphanum|domainname|double2|int|is_in|md5|nospace|num|password|year/i', $tcaConfiguration['config']['eval'])) {
                 // All kind of special values
                 $result = false;
             }
-        } elseif ($tcaConfiguration['type'] === 'text') {
+        } elseif ($tcaConfiguration['config']['type'] === 'text') {
             $result = true;
-            if (isset($tcaConfiguration['renderType']) && $tcaConfiguration['renderType'] !== 'default') {
+            if (isset($tcaConfiguration['config']['renderType']) && $tcaConfiguration['config']['renderType'] !== 'default') {
                 // Anything that is not default is not translatable
                 $result = false;
             }
