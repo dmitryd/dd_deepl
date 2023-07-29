@@ -88,6 +88,7 @@ class DeeplTranslationService implements SingletonInterface
      * @param GlossaryEntries $entries The source- & target-term pairs to add to the glossary
      * @return GlossaryInfo Details about the created glossary.
      * @throws DeepLException
+     * @internal
      */
     public function createGlossary(string $name, string $sourceLanguageIsoCode, string $targetLanguageIsoCode, GlossaryEntries $entries): GlossaryInfo
     {
@@ -103,6 +104,7 @@ class DeeplTranslationService implements SingletonInterface
      * @param string $csvContent String containing CSV content
      * @return GlossaryInfo
      * @throws DeepLException
+     * @internal
      */
     public function createGlossaryFromCsv(string $name, string $sourceLanguageIsoCode, string $targetLanguageIsoCode, string $csvContent): GlossaryInfo
     {
@@ -114,6 +116,7 @@ class DeeplTranslationService implements SingletonInterface
      *
      * @param string $glossaryId
      * @throws \DeepL\DeepLException
+     * @internal
      */
     public function deleteGlossary(string $glossaryId)
     {
@@ -126,6 +129,7 @@ class DeeplTranslationService implements SingletonInterface
      * @param string $glossaryId Glossary ID of the glossary
      * @return GlossaryInfo GlossaryInfo containing details about the glossary
      * @throws DeepLException
+     * @internal
      */
     public function getGlossary(string $glossaryId): GlossaryInfo
     {
@@ -138,6 +142,7 @@ class DeeplTranslationService implements SingletonInterface
      * @param string $glossaryId Glossary ID of the glossary
      * @return string[]
      * @throws DeepLException
+     * @internal
      */
     public function getGlossaryEntries(string $glossaryId): array
     {
@@ -149,6 +154,7 @@ class DeeplTranslationService implements SingletonInterface
      *
      * @return GlossaryLanguagePair[]
      * @throws DeepLException
+     * @internal
      */
     public function getGlossaryLanguages(): array
     {
@@ -176,6 +182,7 @@ class DeeplTranslationService implements SingletonInterface
      * Gets information about all existing glossaries.
      * @return GlossaryInfo[] Array of GlossaryInfos containing details about all existing glossaries.
      * @throws DeepLException
+     * @internal
      */
     public function listGlossaries(): array
     {
