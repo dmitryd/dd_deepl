@@ -41,6 +41,7 @@ use Dmitryd\DdDeepl\Event\CanFieldBeTranslatedCheckEvent;
 use Dmitryd\DdDeepl\Event\PreprocessFieldValueEvent;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
+use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -50,7 +51,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  *
  * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
-class DeeplTranslationService
+class DeeplTranslationService implements SingletonInterface
 {
     protected Configuration $configuration;
 
