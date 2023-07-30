@@ -1,0 +1,53 @@
+<html data-namespace-typo3-fluid="true">
+
+<body>
+
+<f:if condition="{glossaries -> f:count()} === 0">
+	<f:then>
+		<f:translate key="module.glossary.no_glossaries"/>
+	</f:then>
+	<f:else>
+		<f:flashMessages/>
+
+		<h3><f:translate key="module.glossary.manage"/></h3>
+		<table class="table">
+			<tr>
+				<th><f:translate key="module.glossary.name"/></th>
+				<th><f:translate key="module.glossary.source_language"/></th>
+				<th><f:translate key="module.glossary.target_language"/></th>
+				<th><f:translate key="module.glossary.entry_count"/></th>
+				<th><f:translate key="module.glossary.creation_date"/></th>
+				<th><f:translate key="module.glossary.id"/></th>
+				<th><f:translate key="module.glossary.actions"/></th>
+			</tr>
+			<f:for as="glossary" each="{glossaries}">
+				<tr>
+					<td>{glossary.name}</td>
+					<td>{glossary.sourceLang}</td>
+					<td>{glossary.targetLang}</td>
+					<td>{glossary.entryCount}</td>
+					<td>{glossary.creationTime.timestamp -> f:format.date(format: 'd.m.Y H:i')}</td>
+					<td>{glossary.glossaryId}</td>
+					<td>
+						<div class="btn-group">
+							<a class="btn btn-default" href="{f:be.uri(parameters: {tx_dddeepl_site_dddeepldddeepl: {action: 'viewGlossary', glossaryId: glossary.glossaryId}, id: id}, route: 'site_DdDeeplDdDeepl')}"><core:icon identifier="actions-view" /></a>
+							<a class="btn btn-default" href="{f:be.uri(parameters: {tx_dddeepl_site_dddeepldddeepl: {action: 'downloadGlossary', glossaryId: glossary.glossaryId}, id: id}, route: 'site_DdDeeplDdDeepl')}"><core:icon identifier="actions-download" /></a>
+							<a class="btn btn-default t3js-modal-trigger"
+									data-severity="warning"
+									data-title="{f:translate(key: 'module.glossary.delete.modal.title')}"
+									data-bs-content="{f:translate(key: 'module.glossary.delete.modal.message')}"
+									data-button-close-text="{f:translate(key: 'LLL:EXT:core/Resources/Private/Language/locallang_common.xlf:cancel')}"
+									title="module.glossary.delete.modal.title"
+									href="{f:be.uri(parameters: {tx_dddeepl_site_dddeepldddeepl: {action: 'deleteGlossary', glossaryId: glossary.glossaryId}, id: id}, route: 'site_DdDeeplDdDeepl')}"
+							><core:icon identifier="actions-edit-delete" /></a>
+						</div>
+					</td>
+				</tr>
+			</f:for>
+		</table>
+	</f:else>
+</f:if>
+
+</body>
+
+</html>

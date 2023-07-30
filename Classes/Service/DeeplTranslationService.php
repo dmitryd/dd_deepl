@@ -162,6 +162,17 @@ class DeeplTranslationService implements SingletonInterface
     }
 
     /**
+     * Fetches usage information
+     *
+     * @return Usage
+     * @throws \DeepL\DeepLException
+     */
+    public function getUsage(): Usage
+    {
+        return $this->translator->getUsage();
+    }
+
+    /**
      * Checks if DeepL translation is available.
      *
      * @return bool

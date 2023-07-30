@@ -13,6 +13,109 @@
 					confidential or sensitive information outside of your company.
 				</source>
 			</trans-unit>
+
+			<trans-unit id="mlang_tabs_tab">
+				<source>DeepL</source>
+			</trans-unit>
+			<trans-unit id="mlang_labels_tablabel">
+				<source>Manage DeepL</source>
+			</trans-unit>
+			<trans-unit id="mlang_labels_tabdescr">
+				<source>This module provides an easy way to manage DeepL functionality in TYPO3.</source>
+			</trans-unit>
+			<trans-unit id="module.not_configured">
+				<source>DeepL is not configured for this site.</source>
+			</trans-unit>
+			<trans-unit id="module.module.not_available">
+				<source>DeepL is not currently available.</source>
+			</trans-unit>
+			<trans-unit id="module.overview">
+				<source>Overview</source>
+			</trans-unit>
+			<trans-unit id="module.overview.configuration">
+				<source>Configuration</source>
+			</trans-unit>
+			<trans-unit id="module.overview.api_key">
+				<source>DeepL API key</source>
+			</trans-unit>
+			<trans-unit id="module.overview.api_url">
+				<source>DeepL API URL</source>
+			</trans-unit>
+			<trans-unit id="module.overview.limit">
+				<source>Limits</source>
+			</trans-unit>
+			<trans-unit id="module.overview.limit.info">
+				<source>You used %d characters of %d available. This is %.0f%%.</source>
+			</trans-unit>
+			<trans-unit id="module.overview.glossaries">
+				<source>Glossaries</source>
+			</trans-unit>
+			<trans-unit id="module.overview.glossary_count">
+				<source>Number of uploaded glossaries</source>
+			</trans-unit>
+			<trans-unit id="module.glossary">
+				<source>Manage glossaries</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.no_glossaries">
+				<source>There are no glossaries uploaded for this account.</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.name">
+				<source>Name</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.source_language">
+				<source>Source</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.target_language">
+				<source>Target</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.entry_count">
+				<source>Word count</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.creation_date">
+				<source>Created</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.id">
+				<source>ID</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.manage">
+				<source>Manage your glossaries</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.actions">
+				<source>Actions</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.action.view">
+				<source>View</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.view.overview">
+				<source>Glossary information</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.view.entries">
+				<source>Entries</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.action.download">
+				<source>Download</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.action.delete">
+				<source>De</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.delete.modal.title">
+				<source>Delete a glossary</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.delete.modal.message">
+				<source>Are you sure you want to delete this glossary? This action cannot be undone!</source>
+			</trans-unit>
+			<trans-unit id="module.glossary.delete.done">
+				<source>Glossary "%s" with id=%s was deleted.</source>
+			</trans-unit>
+			<trans-unit id="module.select_a_page">
+				<source>Please, select a page in the page tree on the left first.</source>
+			</trans-unit>
+			<trans-unit id="module.button.back">
+				<source>Back to overview</source>
+			</trans-unit>
+			<trans-unit id="module.button.download">
+				<source>Download</source>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>
