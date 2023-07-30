@@ -1,0 +1,19 @@
+<html data-namespace-typo3-fluid="true">
+
+
+<f:layout name="Default"/>
+
+<f:section name="content">
+
+	<h3><f:translate key="module.overview.configuration"/></h3>
+	<p><f:translate key="module.overview.api_key"/>: {apiKey}</p>
+	<p><f:translate key="module.overview.api_url"/>: {apiUrl}</p>
+
+	<h3><f:translate key="module.overview.limit"/></h3>
+	<p><f:translate arguments="{0: usage.count, 1: usage.limit, 2: usage.percent}" key="module.overview.limit.info"/></p>
+
+	<h3><f:translate key="module.overview.glossaries"/></h3>
+	<p><f:translate key="module.overview.glossary_count"/>: {glossaryCount}</p>
+</f:section>
+
+</html>
