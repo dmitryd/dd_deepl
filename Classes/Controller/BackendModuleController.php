@@ -25,6 +25,7 @@ namespace Dmitryd\DdDeepl\Controller;
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+use DeepL\DeepLException;
 use Dmitryd\DdDeepl\Configuration\Configuration;
 use Dmitryd\DdDeepl\Service\DeeplTranslationService;
 use Psr\Http\Message\ResponseInterface;
@@ -76,9 +77,26 @@ class BackendModuleController extends ActionController
     {
         $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
 
+        try {
+            $entries = $service->getGlossaryEntries($glossaryId);
+        } catch (DeepLException $exception) {
+            $flashMessage = GeneralUtility::makeInstance(
+                FlashMessage::class,
+                '',
+                LocalizationUtility::translate('module.error', 'dd_deepl', [$exception->getCode(), $exception->getMessage()]),
+                AbstractMessage::ERROR,
+                true
+            );
+            $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+            $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
+            $defaultFlashMessageQueue->enqueue($flashMessage);
+
+            $this->redirect('glossary');
+        }
+
         $response = GeneralUtility::makeInstance(Response::class);
         $stream = $response->getBody();
-        foreach ($service->getGlossaryEntries($glossaryId) as $source => $target) {
+        foreach ($entries as $source => $target) {
             $stream->write(
                 sprintf(
                     '"%s","%s"' . LF,
@@ -105,7 +123,11 @@ class BackendModuleController extends ActionController
     {
         $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
         $info = $service->getGlossary($glossaryId);
-        $service->deleteGlossary($glossaryId);
+        try {
+            $service->deleteGlossary($glossaryId);
+        } catch (DeepLException) {
+            // Igmore
+        }
 
         $flashMessage = GeneralUtility::makeInstance(
             FlashMessage::class,
@@ -186,10 +208,25 @@ class BackendModuleController extends ActionController
     public function viewGlossaryAction(string $glossaryId): ResponseInterface
     {
         $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
-        $this->view->assignMultiple([
-            'glossary' => $service->getGlossary($glossaryId),
-            'entries' => $service->getGlossaryEntries($glossaryId),
-        ]);
+        try {
+            $this->view->assignMultiple([
+                'glossary' => $service->getGlossary($glossaryId),
+                'entries' => $service->getGlossaryEntries($glossaryId),
+            ]);
+        } catch (DeepLException $exception) {
+            $flashMessage = GeneralUtility::makeInstance(
+                FlashMessage::class,
+                '',
+                LocalizationUtility::translate('module.error', 'dd_deepl', [$exception->getCode(), $exception->getMessage()]),
+                AbstractMessage::ERROR,
+                true
+            );
+            $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+            $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
+            $defaultFlashMessageQueue->enqueue($flashMessage);
+
+            $this->redirect('glossary');
+        }
         $this->moduleTemplate->setContent($this->view->render());
         return $this->htmlResponse($this->moduleTemplate->renderContent());
     }

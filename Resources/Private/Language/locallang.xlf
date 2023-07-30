@@ -116,6 +116,9 @@
 			<trans-unit id="module.button.download">
 				<source>Download</source>
 			</trans-unit>
+			<trans-unit id="module.error">
+				<source>There was a problem with DeepL: [%d] %s</source>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>
