@@ -53,10 +53,12 @@ class InjectAdditionalResources
             GeneralUtility::makeInstance(DeeplTranslationService::class)->isAvailable()
         ) {
             $pageTSConfig = BackendUtility::getPagesTSconfig($this->getPageId());
-            if (($request->getQueryParams()['route'] ?? '') === '/module/web/layout') {
+            $module = $request->getAttribute('module');
+            /** @var \TYPO3\CMS\Backend\Module\Module $module */
+            if ($module && $module->getIdentifier() === 'web_layout') {
                 // Page module
                 if ($pageTSConfig['mod.']['web_layout.']['localization.']['enableDeepL'] ?? true) {
-                    $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/Localization');
+                    $pageRenderer->loadJavaScriptModule('@dmitryd/dd_deepl/Localization.js');
                     $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
                 }
             } else {
