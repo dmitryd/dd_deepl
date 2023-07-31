@@ -287,10 +287,12 @@ class BackendModuleController extends ActionController
         // Shortcut
         if ($GLOBALS['BE_USER']->mayMakeShortcut()) {
             $shortcutButton = $buttonBar->makeShortcutButton()
-                ->setGetVariables(['route', 'module', 'id'])
-                ->setModuleName($this->request->getPluginName())
                 ->setRouteIdentifier('site_DdDeeplDdDeepl')
-                ->setArguments(['action' => $this->request->getControllerActionName()])
+                ->setArguments([
+                    'action' => $this->request->getControllerActionName(),
+                    'id' => $GLOBALS['TYPO3_REQUEST']->getQueryParams()['id'] ?? 0,
+                    'module' => $this->request->getPluginName(),
+                ])
                 ->setDisplayName('Shortcut');
             $buttonBar->addButton($shortcutButton, ButtonBar::BUTTON_POSITION_RIGHT);
         }
