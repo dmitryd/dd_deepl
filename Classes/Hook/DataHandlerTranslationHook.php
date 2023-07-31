@@ -102,29 +102,32 @@ class DataHandlerTranslationHook
      */
     protected function translateLocalizedRecordFields(string $tableName, array $record, mixed $languageId, DataHandler $dataHandler): void
     {
-        list($translation) = BackendUtility::getRecordLocalization($tableName, $record['uid'], $languageId);
-        if ($translation) {
-            try {
-                $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($record['pid']);
-                $targetLanguage = $site->getLanguageById($languageId);
-            } catch (SiteNotFoundException) {
-                // Nothing to do, record is outside of sites
-                return;
-            } catch (\InvalidArgumentException) {
-                // Nothing to do - language does not exist on the site but the record has it
-                return;
-            }
-            try {
-                $data = [
-                    $tableName => [
-                        $translation['uid'] => GeneralUtility::makeInstance(DeeplTranslationService::class)->translateRecord($tableName, $record, $targetLanguage),
-                    ]
-                ];
-                $localDataHandler = GeneralUtility::makeInstance(DataHandler::class);
-                $localDataHandler->start($data, [], $dataHandler->BE_USER);
-                $localDataHandler->process_datamap();
-            } catch (DeepLException) {
-                // TODO Logging here about failure reasons
+        $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+        if ($service->isAvailable()) {
+            list($translation) = BackendUtility::getRecordLocalization($tableName, $record['uid'], $languageId);
+            if ($translation) {
+                try {
+                    $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($record['pid']);
+                    $targetLanguage = $site->getLanguageById($languageId);
+                } catch (SiteNotFoundException) {
+                    // Nothing to do, record is outside of sites
+                    return;
+                } catch (\InvalidArgumentException) {
+                    // Nothing to do - language does not exist on the site but the record has it
+                    return;
+                }
+                try {
+                    $data = [
+                        $tableName => [
+                            $translation['uid'] => $service->translateRecord($tableName, $record, $targetLanguage),
+                        ]
+                    ];
+                    $localDataHandler = GeneralUtility::makeInstance(DataHandler::class);
+                    $localDataHandler->start($data, [], $dataHandler->BE_USER);
+                    $localDataHandler->process_datamap();
+                } catch (DeepLException) {
+                    // TODO Logging here about failure reasons
+                }
             }
         }
     }

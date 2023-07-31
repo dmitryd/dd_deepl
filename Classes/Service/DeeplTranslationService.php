@@ -57,7 +57,7 @@ class DeeplTranslationService implements SingletonInterface
 
     protected EventDispatcher $eventDispatcher;
 
-    protected Translator $translator;
+    protected ?Translator $translator = null;
 
     /**
      * Creates the instance of the class.
@@ -76,7 +76,10 @@ class DeeplTranslationService implements SingletonInterface
             ],
             $deeplOptions
         );
-        $this->translator = new Translator($this->configuration->getApiKey(), $deeplOptions);
+        $apiKey = $this->configuration->getApiKey();
+        if ($apiKey) {
+            $this->translator = new Translator($apiKey, $deeplOptions);
+        }
     }
 
     /**
@@ -179,6 +182,9 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function isAvailable(): bool
     {
+        if (!$this->translator) {
+            return false;
+        }
         try {
             // Best alternative to a ping function
             $result = $this->translator->getUsage();
