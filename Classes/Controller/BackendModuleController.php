@@ -153,12 +153,11 @@ class BackendModuleController extends ActionController
     public function glossaryAction(string $glossaryId = ''): ResponseInterface
     {
         $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
-        $this->view->assignMultiple([
+        $this->moduleTemplate->assignMultiple([
             'glossaries' => $service->listGlossaries(),
             'id' => $this->pageUid,
         ]);
-        $this->moduleTemplate->setContent($this->view->render());
-        return $this->htmlResponse($this->moduleTemplate->renderContent());
+        return $this->moduleTemplate->renderResponse();
     }
 
     /**
@@ -168,7 +167,7 @@ class BackendModuleController extends ActionController
      */
     public function noPageIdAction(): ResponseInterface
     {
-        return $this->htmlResponse($this->view->render('noPageId'));
+        return $this->moduleTemplate->renderResponse();
     }
 
     /**
@@ -182,14 +181,9 @@ class BackendModuleController extends ActionController
         $configuration = GeneralUtility::makeInstance(Configuration::class);
         $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
 
-        if (!$service->isAvailable()) {
-            $this->view->assignMultiple([
-                'isConfigured' => $configuration->isConfigured(),
-                'isAvailable' => $service->isAvailable(),
-            ]);
-        } else {
+        if ($service->isAvailable()) {
             $usage = $service->getUsage();
-            $this->view->assignMultiple([
+            $this->moduleTemplate->assignMultiple([
                 'apiKey' => substr($configuration->getApiKey(), 0, 5) . '...' . substr($configuration->getApiKey(), -5),
                 'apiUrl' => $configuration->getApiUrl(),
                 'isConfigured' => $configuration->isConfigured(),
@@ -202,8 +196,8 @@ class BackendModuleController extends ActionController
                 'glossaryCount' => count($service->listGlossaries()),
             ]);
         }
-        $this->moduleTemplate->setContent($this->view->render());
-        return $this->htmlResponse($this->moduleTemplate->renderContent());
+        return $this->moduleTemplate->renderResponse();
+    }
     }
 
     /**
@@ -217,7 +211,7 @@ class BackendModuleController extends ActionController
     {
         $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
         try {
-            $this->view->assignMultiple([
+            $this->moduleTemplate->assignMultiple([
                 'glossary' => $service->getGlossary($glossaryId),
                 'entries' => $service->getGlossaryEntries($glossaryId),
             ]);
@@ -235,8 +229,7 @@ class BackendModuleController extends ActionController
 
             $this->redirect('glossary');
         }
-        $this->moduleTemplate->setContent($this->view->render());
-        return $this->htmlResponse($this->moduleTemplate->renderContent());
+        return $this->moduleTemplate->renderResponse();
     }
 
     /**
@@ -337,6 +330,12 @@ class BackendModuleController extends ActionController
         $this->moduleTemplate = GeneralUtility::makeInstance(ModuleTemplateFactory::class)->create($this->request);
         $this->createMenu();
         $this->createButtons();
+
+        $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+        $this->moduleTemplate->assignMultiple([
+            'isConfigured' => $service->isAvailable(),
+            'isAvailable' => $service->isAvailable(),
+        ]);
     }
 
     /** @inheritDoc */

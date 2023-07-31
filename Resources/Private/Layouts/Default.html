@@ -1,20 +1,52 @@
-<html data-namespace-typo3-fluid="true">
+<html
+    xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+    data-namespace-typo3-fluid="true"
+>
 
-<f:if condition="!{isConfigured}">
-	<f:then>
-		<f:translate key="module.not_configured"/>
-	</f:then>
-	<f:else>
-		<f:if condition="!{isAvailable}">
-			<f:then>
-				<f:translate key="module.not_available"/>
-			</f:then>
-			<f:else>
-				<f:flashMessages/>
-				<f:render arguments="{_all}" section="content"/>
-			</f:else>
-		</f:if>
-	</f:else>
-</f:if>
+<f:render section="Before" arguments="{_all}" optional="true" />
+
+<div class="module {moduleClass}" data-module-id="{moduleId}" data-module-name="{moduleName}">
+    <f:if condition="{formTag}">
+        <f:then>
+            <f:format.raw>{formTag}</f:format.raw>
+        </f:then>
+    </f:if>
+    <f:if condition="{docHeader.enabled}">
+        <f:render partial="DocHeader" arguments="{docHeader:docHeader}" />
+    </f:if>
+    <div class="module-body t3js-module-body">
+        <f:if condition="{uiBlock}">
+            <div id="t3js-ui-block" class="ui-block">
+                <core:icon identifier="spinner-circle-light" size="large" />
+            </div>
+        </f:if>
+        <f:flashMessages queueIdentifier="{flashMessageQueueIdentifier}" />
+
+				<f:if condition="!{isConfigured}">
+						<f:then>
+								<f:translate key="module.not_configured"/>
+						</f:then>
+						<f:else>
+								<f:if condition="!{isAvailable}">
+									<f:then>
+												<f:translate key="module.not_available"/>
+									</f:then>
+										<f:else>
+												<f:render arguments="{_all}" section="content"/>
+										</f:else>
+								</f:if>
+						</f:else>
+				</f:if>
+        <f:render section="Content" arguments="{_all}" optional="true" />
+
+    </div>
+    <f:if condition="{formTag}">
+        <f:then>
+            </form>
+        </f:then>
+    </f:if>
+</div>
+
+<f:render section="After" arguments="{_all}" optional="true" />
 
 </html>

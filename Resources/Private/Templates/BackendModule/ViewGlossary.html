@@ -1,62 +1,64 @@
 <html data-namespace-typo3-fluid="true">
 
-<body>
+<f:layout name="Default"/>
 
-<h3><f:translate key="module.glossary.view.overview"/></h3>
+<f:section name="content">
 
-<table class="table">
-	<tr>
-		<th><f:translate key="module.glossary.name"/></th>
-		<td>{glossary.name}</td>
-	</tr>
-	<tr>
-		<th><f:translate key="module.glossary.source_language"/></th>
-		<td>{glossary.sourceLang}</td>
-	</tr>
-	<tr>
-		<th><f:translate key="module.glossary.target_language"/></th>
-		<td>{glossary.targetLang}</td>
-	</tr>
-	<tr>
-		<th><f:translate key="module.glossary.entry_count"/></th>
-		<td>{glossary.entryCount}</td>
-	</tr>
-	<tr>
-		<th><f:translate key="module.glossary.creation_date"/></th>
-		<td>{glossary.creationTime.timestamp -> f:format.date(format: 'd.m.Y H:i')}</td>
-	</tr>
-	<tr>
-		<th><f:translate key="module.glossary.id"/></th>
-		<td>{glossary.glossaryId}</td>
-	</tr>
-</table>
+	<h3><f:translate key="module.glossary.view.overview"/></h3>
 
-<h3><f:translate key="module.glossary.view.entries"/></h3>
-
-<table class="table">
-	<f:for as="glossary" each="{glossaries}">
+	<table class="table">
 		<tr>
-			<td>
-				<div class="btn-group">
-					<a class="btn btn-default" href="{f:be.uri(parameters: {tx_dddeepl_site_dddeepldddeepl: {action: 'viewGlossary', glossaryId: glossary.glossaryId}, id: id}, route: 'site_DdDeeplDdDeepl')}"><core:icon identifier="actions-view" /></a>
-					<a class="btn btn-default" href="{f:be.uri(parameters: {tx_dddeepl_site_dddeepldddeepl: {action: 'downloadGlossary', glossaryId: glossary.glossaryId}, id: id}, route: 'site_DdDeeplDdDeepl')}"><core:icon identifier="actions-download" /></a>
-					<a class="btn btn-default" href="{f:be.uri(parameters: {tx_dddeepl_site_dddeepldddeepl: {action: 'deleteGlossary', glossaryId: glossary.glossaryId}, id: id}, route: 'site_DdDeeplDdDeepl')}"><core:icon identifier="actions-edit-delete" /></a>
-				</div>
-			</td>
+			<th><f:translate key="module.glossary.name"/></th>
+			<td>{glossary.name}</td>
 		</tr>
-	</f:for>
-</table>
-
-
-<table class="table">
-	<f:for as="target" each="{entries}" key="source">
 		<tr>
-			<td>{source}</td>
-			<td>{target}</td>
+			<th><f:translate key="module.glossary.source_language"/></th>
+			<td>{glossary.sourceLang}</td>
 		</tr>
-	</f:for>
-</table>
+		<tr>
+			<th><f:translate key="module.glossary.target_language"/></th>
+			<td>{glossary.targetLang}</td>
+		</tr>
+		<tr>
+			<th><f:translate key="module.glossary.entry_count"/></th>
+			<td>{glossary.entryCount}</td>
+		</tr>
+		<tr>
+			<th><f:translate key="module.glossary.creation_date"/></th>
+			<td>{glossary.creationTime.timestamp -> f:format.date(format: 'd.m.Y H:i')}</td>
+		</tr>
+		<tr>
+			<th><f:translate key="module.glossary.id"/></th>
+			<td>{glossary.glossaryId}</td>
+		</tr>
+	</table>
 
-</body>
+	<h3><f:translate key="module.glossary.view.entries"/></h3>
+
+	<table class="table">
+		<f:for as="glossary" each="{glossaries}">
+			<tr>
+				<td>
+					<div class="btn-group">
+						<a class="btn btn-default" href="{f:be.uri(parameters: {tx_dddeepl_site_dddeepldddeepl: {action: 'viewGlossary', glossaryId: glossary.glossaryId}, id: id}, route: 'site_DdDeeplDdDeepl')}"><core:icon identifier="actions-view" /></a>
+						<a class="btn btn-default" href="{f:be.uri(parameters: {tx_dddeepl_site_dddeepldddeepl: {action: 'downloadGlossary', glossaryId: glossary.glossaryId}, id: id}, route: 'site_DdDeeplDdDeepl')}"><core:icon identifier="actions-download" /></a>
+						<a class="btn btn-default" href="{f:be.uri(parameters: {tx_dddeepl_site_dddeepldddeepl: {action: 'deleteGlossary', glossaryId: glossary.glossaryId}, id: id}, route: 'site_DdDeeplDdDeepl')}"><core:icon identifier="actions-edit-delete" /></a>
+					</div>
+				</td>
+			</tr>
+		</f:for>
+	</table>
+
+
+	<table class="table">
+		<f:for as="target" each="{entries}" key="source">
+			<tr>
+				<td>{source}</td>
+				<td>{target}</td>
+			</tr>
+		</f:for>
+	</table>
+
+</f:section>
 
 </html>
