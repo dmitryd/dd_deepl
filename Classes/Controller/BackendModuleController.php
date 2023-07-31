@@ -39,6 +39,7 @@ use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Messaging\AbstractMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder;
@@ -62,7 +63,7 @@ class BackendModuleController extends ActionController
      */
     public function __construct()
     {
-        $this->pageUid = (int)GeneralUtility::_GET('id');
+        $this->pageUid = (int)($GLOBALS['TYPO3_REQUEST']->getQueryParams()['id'] ?? 0);
         $this->pageInformation = BackendUtility::readPageAccess($this->pageUid, '');
     }
 
@@ -186,8 +187,6 @@ class BackendModuleController extends ActionController
             $this->moduleTemplate->assignMultiple([
                 'apiKey' => substr($configuration->getApiKey(), 0, 5) . '...' . substr($configuration->getApiKey(), -5),
                 'apiUrl' => $configuration->getApiUrl(),
-                'isConfigured' => $configuration->isConfigured(),
-                'isAvailable' => $service->isAvailable(),
                 'usage' => [
                     'count' => $usage->character->count,
                     'limit' => $usage->character->limit,
@@ -283,7 +282,7 @@ class BackendModuleController extends ActionController
                 ->setRouteIdentifier('site_DdDeeplDdDeepl')
                 ->setArguments([
                     'action' => $this->request->getControllerActionName(),
-                    'id' => $GLOBALS['TYPO3_REQUEST']->getQueryParams()['id'] ?? 0,
+                    'id' => $this->pageUid,
                     'module' => $this->request->getPluginName(),
                 ])
                 ->setDisplayName('Shortcut');
@@ -332,9 +331,10 @@ class BackendModuleController extends ActionController
         $this->createButtons();
 
         $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+        $isAvailable = $service->isAvailable() && $this->pageUid > 0;
         $this->moduleTemplate->assignMultiple([
-            'isConfigured' => $service->isAvailable(),
-            'isAvailable' => $service->isAvailable(),
+            'isConfigured' => $isAvailable,
+            'isAvailable' => $isAvailable,
         ]);
     }
 
