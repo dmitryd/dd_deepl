@@ -119,6 +119,12 @@
 			<trans-unit id="module.error">
 				<source>There was a problem with DeepL: [%d] %s</source>
 			</trans-unit>
+			<trans-unit id="module.button.upload">
+				<source>Upload</source>
+			</trans-unit>
+			<trans-unit id="module.upload.title">
+				<source>Upload a new glossary</source>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>

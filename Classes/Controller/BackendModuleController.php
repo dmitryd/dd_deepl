@@ -33,12 +33,14 @@ use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Messaging\AbstractMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
@@ -197,6 +199,102 @@ class BackendModuleController extends ActionController
         }
         return $this->moduleTemplate->renderResponse();
     }
+
+    /**
+     * Shows the upload form.
+     *
+     * @return ResponseInterface
+     */
+    public function uploadFormAction(string $name = '', string $sourceLanguage = '', string $targetLanguage = ''): ResponseInterface
+    {
+        try {
+            $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($this->pageUid);
+        } catch (SiteNotFoundException) {
+            // TODO Handle this
+        }
+        $languages = [];
+        foreach ($site->getAllLanguages() as $siteLanguage) {
+            /** @var \TYPO3\CMS\Core\Site\Entity\SiteLanguage $siteLanguage */
+            $languages[$siteLanguage->getLocale()->getLanguageCode()] = $siteLanguage->getTitle();
+        }
+        $this->moduleTemplate->assignMultiple([
+            'id' => $this->pageUid,
+            'languages' => $languages,
+            'name' => $name,
+            'sourceLanguage' => $sourceLanguage,
+            'targetLanguage' => $targetLanguage,
+        ]);
+        return $this->moduleTemplate->renderResponse();
+    }
+
+    /**
+     * Uploads the glossary.
+     */
+    public function uploadAction(string $name, string $sourceLanguage, string $targetLanguage)
+    {
+        if (count($_FILES) === 0) {
+            $this->redirect('uploadForm');
+        }
+
+        $severity = ContextualFeedbackSeverity::ERROR;
+        if ($_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+            switch ($_FILES['file']['error']) {
+                case UPLOAD_ERR_NO_FILE:
+                    $message = 'no_file';
+                    break;
+                case UPLOAD_ERR_INI_SIZE:
+                case UPLOAD_ERR_FORM_SIZE:
+                    $message = 'too_large';
+                    break;
+                default:
+                    $message = 'unknown_error';
+            }
+        } elseif (!is_uploaded_file($_FILES['file']['tmp_name'])) {
+            $message = 'unknown_error';
+        } else {
+            // TODO More validation: name, languages are valid and different
+            $fileName = GeneralUtility::tempnam('', '.csv');
+            move_uploaded_file($_FILES['file']['tmp_name'], $fileName);
+            $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+            $service->createGlossaryFromCsv($name, $sourceLanguage, $targetLanguage, file_get_contents($fileName));
+            unlink($fileName);
+            $severity = ContextualFeedbackSeverity::OK;
+            $message = 'uploaded';
+        }
+
+        $flashMessage = GeneralUtility::makeInstance(
+            FlashMessage::class,
+            '',
+            LocalizationUtility::translate('module.upload.message.' . $message, 'dd_deepl'),
+            $severity,
+            true
+        );
+        $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+        $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
+        $defaultFlashMessageQueue->enqueue($flashMessage);
+
+        if ($severity === ContextualFeedbackSeverity::ERROR) {
+            $this->redirect(
+                'uploadForm',
+                null,
+                null,
+                [
+                    'action' => 'uploadForm',
+                    'name' => $name,
+                    'sourceLanguage' => $sourceLanguage,
+                    'targetLanguage' => $targetLanguage,
+                ],
+                $this->pageUid
+            );
+        } else {
+            $this->redirect(
+                'glossary',
+                null,
+                null,
+                [],
+                $this->pageUid
+            );
+        }
     }
 
     /**
@@ -245,19 +343,37 @@ class BackendModuleController extends ActionController
 
         $buttons = [];
 
-        if ($this->request->getControllerActionName() === 'viewGlossary') {
-            $buttons[] = [
-                'label' => 'module.button.back',
-                'action' => 'glossary',
-                'icon' => 'actions-view-go-back',
-                'arguments' => [],
-            ];
-            $buttons[] = [
-                'label' => 'module.button.download',
-                'action' => 'downloadGlossary',
-                'icon' => 'actions-download',
-                'arguments' => ['glossaryId' => $_GET['tx_dddeepl_site_dddeepldddeepl']['glossaryId']],
-            ];
+        switch ($this->request->getControllerActionName()) {
+            case 'glossary':
+                $buttons[] = [
+                    'label' => 'module.button.upload',
+                    'action' => 'uploadForm',
+                    'icon' => 'actions-upload',
+                    'arguments' => [],
+                ];
+                break;
+            case 'uploadForm':
+                $buttons[] = [
+                    'label' => 'module.button.back',
+                    'action' => 'glossary',
+                    'icon' => 'actions-view-go-back',
+                    'arguments' => [],
+                ];
+                break;
+            case 'viewGlossary':
+                $buttons[] = [
+                    'label' => 'module.button.back',
+                    'action' => 'glossary',
+                    'icon' => 'actions-view-go-back',
+                    'arguments' => [],
+                ];
+                $buttons[] = [
+                    'label' => 'module.button.download',
+                    'action' => 'downloadGlossary',
+                    'icon' => 'actions-download',
+                    'arguments' => ['glossaryId' => $_GET['tx_dddeepl_site_dddeepldddeepl']['glossaryId']],
+                ];
+                break;
         }
 
         foreach ($buttons as $configuration) {
@@ -309,7 +425,7 @@ class BackendModuleController extends ActionController
             $menu->setIdentifier('dd_deepl');
             $actions = [
                 ['action' => 'overview', 'label' => 'overview', 'test' => '/^overview$/'],
-                ['action' => 'glossary', 'label' => 'glossary', 'test' => '/glossary/i'],
+                ['action' => 'glossary', 'label' => 'glossary', 'test' => '/glossary|upload/i'],
             ];
             foreach ($actions as $action) {
                 $item = $menu->makeMenuItem()

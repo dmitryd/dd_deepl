@@ -19,6 +19,8 @@ return [
                 'viewGlossary',
                 'downloadGlossary',
                 'deleteGlossary',
+                'uploadForm',
+                'upload',
             ],
         ],
     ],
