@@ -181,19 +181,27 @@ class BackendModuleController extends ActionController
     {
         $configuration = GeneralUtility::makeInstance(Configuration::class);
         $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
-        $usage = $service->getUsage();
-        $this->view->assignMultiple([
-            'apiKey' => substr($configuration->getApiKey(), 0, 5) . '...' . substr($configuration->getApiKey(), -5),
-            'apiUrl' => $configuration->getApiUrl(),
-            'isConfigured' => $configuration->isConfigured(),
-            'isAvailable' => $service->isAvailable(),
-            'usage' => [
-                'count' => $usage->character->count,
-                'limit' => $usage->character->limit,
-                'percent' => 100*$usage->character->count/$usage->character->limit,
-            ],
-            'glossaryCount' => count($service->listGlossaries()),
-        ]);
+
+        if (!$service->isAvailable()) {
+            $this->view->assignMultiple([
+                'isConfigured' => $configuration->isConfigured(),
+                'isAvailable' => $service->isAvailable(),
+            ]);
+        } else {
+            $usage = $service->getUsage();
+            $this->view->assignMultiple([
+                'apiKey' => substr($configuration->getApiKey(), 0, 5) . '...' . substr($configuration->getApiKey(), -5),
+                'apiUrl' => $configuration->getApiUrl(),
+                'isConfigured' => $configuration->isConfigured(),
+                'isAvailable' => $service->isAvailable(),
+                'usage' => [
+                    'count' => $usage->character->count,
+                    'limit' => $usage->character->limit,
+                    'percent' => 100*$usage->character->count/$usage->character->limit,
+                ],
+                'glossaryCount' => count($service->listGlossaries()),
+            ]);
+        }
         $this->moduleTemplate->setContent($this->view->render());
         return $this->htmlResponse($this->moduleTemplate->renderContent());
     }
@@ -299,7 +307,9 @@ class BackendModuleController extends ActionController
         $docHeaderComponent = $this->moduleTemplate->getDocHeaderComponent();
         $docHeaderComponent->setMetaInformation($this->pageInformation);
 
-        if ($this->pageUid > 0) {
+        $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+
+        if ($this->pageUid > 0 && $service->isAvailable()) {
             // Show menu only if we have a page id
             $menu = $docHeaderComponent->getMenuRegistry()->makeMenu();
             $menu->setIdentifier('dd_deepl');
