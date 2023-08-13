@@ -94,7 +94,7 @@ class BackendModuleController extends ActionController
             $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
             $defaultFlashMessageQueue->enqueue($flashMessage);
 
-            $this->redirect('glossary');
+            return $this->redirect('glossary');
         }
 
         $response = GeneralUtility::makeInstance(Response::class);
@@ -120,16 +120,16 @@ class BackendModuleController extends ActionController
      * @param string $glossaryId
      * @throws \DeepL\DeepLException
      * @throws \TYPO3\CMS\Core\Exception
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\StopActionException
+     * @return ResponseInterface
      */
-    public function deleteGlossaryAction(string $glossaryId): void
+    public function deleteGlossaryAction(string $glossaryId): ResponseInterface
     {
         $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
         $info = $service->getGlossary($glossaryId);
         try {
             $service->deleteGlossary($glossaryId);
         } catch (DeepLException) {
-            // Igmore
+            // Ignore
         }
 
         $flashMessage = GeneralUtility::makeInstance(
@@ -143,7 +143,7 @@ class BackendModuleController extends ActionController
         $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
         $defaultFlashMessageQueue->enqueue($flashMessage);
 
-        $this->redirect('glossary');
+        return $this->redirect('glossary');
     }
 
     /**
@@ -274,12 +274,11 @@ class BackendModuleController extends ActionController
         $defaultFlashMessageQueue->enqueue($flashMessage);
 
         if ($severity === ContextualFeedbackSeverity::ERROR) {
-            $this->redirect(
+            return $this->redirect(
                 'uploadForm',
                 null,
                 null,
                 [
-                    'action' => 'uploadForm',
                     'name' => $name,
                     'sourceLanguage' => $sourceLanguage,
                     'targetLanguage' => $targetLanguage,
@@ -287,7 +286,7 @@ class BackendModuleController extends ActionController
                 $this->pageUid
             );
         } else {
-            $this->redirect(
+            return $this->redirect(
                 'glossary',
                 null,
                 null,
@@ -324,7 +323,7 @@ class BackendModuleController extends ActionController
             $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
             $defaultFlashMessageQueue->enqueue($flashMessage);
 
-            $this->redirect('glossary');
+            return $this->redirect('glossary');
         }
         return $this->moduleTemplate->renderResponse();
     }
