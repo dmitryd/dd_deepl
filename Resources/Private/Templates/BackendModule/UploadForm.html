@@ -7,19 +7,17 @@
 
 	<h3><f:translate key="module.upload.title"/></h3>
 
-	<form action="{f:be.uri(parameters: {id: id}, route: 'site_DdDeeplDdDeepl')}" class="mt-4" method="post" enctype="multipart/form-data">
-		<input type="hidden" name="tx_dddeepl_site_dddeepldddeepl[action]" value="upload"/>
+	<form action="{f:be.uri(parameters: {id: id, action: 'upload'}, route: 'site_DdDeeplDdDeepl')}" class="mt-4" method="post" enctype="multipart/form-data">
 		<div class="form-group row">
-	    <label for="name" class="col-sm-2 col-form-label">Name:</label>
+	    <label for="name" class="col-sm-2 col-form-label"><f:translate key="module.upload.name"/></label>
 	    <div class="col-sm-10">
-	      <input required type="text" class="form-control" id="name" name="tx_dddeepl_site_dddeepldddeepl[name]" value="{name}">
+	      <input required type="text" required class="form-control" id="name" name="glossaryName" value="{name}">
 	    </div>
 	  </div>
 		<div class="form-group row">
-	    <label for="sourceLanguage" class="col-sm-2 col-form-label">Source language:</label>
+	    <label for="sourceLanguage" class="col-sm-2 col-form-label"><f:translate key="module.upload.source_language"/></label>
 	    <div class="col-sm-10">
-				<select required id="sourceLanguage" class="form-select form-control" name="tx_dddeepl_site_dddeepldddeepl[sourceLanguage]">
-					<option value=""></option>
+				<select required id="sourceLanguage" class="form-select form-control" name="sourceLanguage">
 					<f:for as="language" each="{languages}" key="code">
 						<option value="{code}"{f:if(condition: '{sourceLanguage} === {code}', then: ' selected')}>{language}</option>
 					</f:for>
@@ -27,10 +25,9 @@
 	    </div>
 	  </div>
 		<div class="form-group row">
-	    <label for="targetLanguage" class="col-sm-2 col-form-label">Target language:</label>
+	    <label for="targetLanguage" class="col-sm-2 col-form-label"><f:translate key="module.upload.target_language"/></label>
 	    <div class="col-sm-10">
-				<select required id="targetLanguage" class="form-select form-control" name="tx_dddeepl_site_dddeepldddeepl[targetLanguage]">
-					<option value=""></option>
+				<select required id="targetLanguage" class="form-select form-control" name="targetLanguage">
 					<f:for as="language" each="{languages}" key="code">
 						<option value="{code}"{f:if(condition: '{targetLanguage} === {code}', then: ' selected')}>{language}</option>
 					</f:for>
@@ -38,7 +35,7 @@
 	    </div>
 	  </div>
 		<div class="form-group row">
-	    <label for="file" class="col-sm-2 col-form-label">CSV file:</label>
+	    <label for="file" class="col-sm-2 col-form-label"><f:translate key="module.upload.csv_file"/></label>
 	    <div class="col-sm-10">
 				<input accept="text/csv" required type="file" class="form-control" id="file"  name="file"/>
 	    </div>
@@ -46,7 +43,7 @@
 		<div class="form-group row">
 	    <label for="submitButton" class="col-sm-2 col-form-label"></label>
 	    <div class="col-sm-10">
-				<input type="submit" class="btn btn-default" id="submitButton" value="Upload"/>
+				<input type="submit" class="btn btn-default" id="submitButton" value="{f:translate(key: 'module.upload.submit')}"/>
 	    </div>
 	  </div>
 	</form>

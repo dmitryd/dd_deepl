@@ -26,6 +26,7 @@ namespace Dmitryd\DdDeepl\Controller;
 ***************************************************************/
 
 use DeepL\DeepLException;
+use DeepL\GlossaryInfo;
 use Dmitryd\DdDeepl\Configuration\Configuration;
 use Dmitryd\DdDeepl\Service\DeeplTranslationService;
 use Psr\Http\Message\ResponseInterface;
@@ -229,15 +230,16 @@ class BackendModuleController extends ActionController
 
     /**
      * Uploads the glossary.
+     *
+     * @return ResponseInterface
      */
-    public function uploadAction(string $name, string $sourceLanguage, string $targetLanguage)
+    public function uploadAction(string $glossaryName, string $sourceLanguage, string $targetLanguage): ResponseInterface
     {
-        if (count($_FILES) === 0) {
-            $this->redirect('uploadForm');
-        }
-
+        $arguments = [];
         $severity = ContextualFeedbackSeverity::ERROR;
-        if ($_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+        if (count($_FILES) === 0) {
+            $message = 'no_file';
+        } elseif ($_FILES['file']['error'] !== UPLOAD_ERR_OK) {
             switch ($_FILES['file']['error']) {
                 case UPLOAD_ERR_NO_FILE:
                     $message = 'no_file';
@@ -248,24 +250,42 @@ class BackendModuleController extends ActionController
                     break;
                 default:
                     $message = 'unknown_error';
+                    $arguments[] = (int)$_FILES['file']['error'];
             }
         } elseif (!is_uploaded_file($_FILES['file']['tmp_name'])) {
-            $message = 'unknown_error';
+            $message = 'no_file';
+        }
+        elseif (trim($glossaryName) === ''){
+            $message = 'no_name';
+        } elseif ($sourceLanguage === $targetLanguage) {
+            $message = 'same_languages';
+        }
+        // Keep this check last because it is expensive
+        elseif ($this->isLimitReachedForLanguages($sourceLanguage, $targetLanguage)) {
+            $message = 'limit_reached';
+            $arguments[] = (int)$this->settings['maximumNumberOfGlossariesPerLanguage'];
         } else {
-            // TODO More validation: name, languages are valid and different
-            $fileName = GeneralUtility::tempnam('', '.csv');
+            $fileName = GeneralUtility::tempnam('glossary-', '.csv');
             move_uploaded_file($_FILES['file']['tmp_name'], $fileName);
-            $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
-            $service->createGlossaryFromCsv($name, $sourceLanguage, $targetLanguage, file_get_contents($fileName));
+            try {
+                $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+                $service->createGlossaryFromCsv($glossaryName, $sourceLanguage, $targetLanguage, file_get_contents($fileName));
+                $severity = ContextualFeedbackSeverity::OK;
+                $message = 'uploaded';
+            } catch (DeepLException $exception) {
+                $message = 'deepl_error';
+                $arguments[] = [
+                    $exception->getCode(),
+                    $exception->getMessage(),
+                ];
+            }
             unlink($fileName);
-            $severity = ContextualFeedbackSeverity::OK;
-            $message = 'uploaded';
         }
 
         $flashMessage = GeneralUtility::makeInstance(
             FlashMessage::class,
             '',
-            LocalizationUtility::translate('module.upload.message.' . $message, 'dd_deepl'),
+            LocalizationUtility::translate('module.upload.message.' . $message, 'dd_deepl', $arguments),
             $severity,
             true
         );
@@ -279,7 +299,7 @@ class BackendModuleController extends ActionController
                 null,
                 null,
                 [
-                    'name' => $name,
+                    'name' => $glossaryName,
                     'sourceLanguage' => $sourceLanguage,
                     'targetLanguage' => $targetLanguage,
                 ],
@@ -451,6 +471,29 @@ class BackendModuleController extends ActionController
             'isConfigured' => $isAvailable,
             'isAvailable' => $isAvailable,
         ]);
+    }
+
+    /**
+     * Checks if limit is reached for a language pair.
+     *
+     * @param string $sourceLanguage
+     * @param string $targetLanguage
+     * @return bool
+     */
+    protected function isLimitReachedForLanguages(string $sourceLanguage, string $targetLanguage): bool
+    {
+        try {
+            $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+            $glossaries = $service->listGlossaries();
+        } catch (DeepLException) {
+            return false;
+        }
+
+        $glossaries = array_filter($glossaries, function (GlossaryInfo $glossaryInfo) use ($sourceLanguage, $targetLanguage): bool {
+            return $glossaryInfo->sourceLang === $sourceLanguage && $glossaryInfo->targetLang === $targetLanguage;
+        });
+
+        return count($glossaries) >= (int)$this->settings['maximumNumberOfGlossariesPerLanguage'];
     }
 
     /** @inheritDoc */

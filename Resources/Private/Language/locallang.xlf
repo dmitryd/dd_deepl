@@ -122,8 +122,44 @@
 			<trans-unit id="module.button.upload">
 				<source>Upload</source>
 			</trans-unit>
-			<trans-unit id="module.upload.title">
+			<trans-unit id="module.upload.name">
+				<source>Name of a glossary</source>
+			</trans-unit>
+			<trans-unit id="module.upload.source_language">
+				<source>Source language</source>
+			</trans-unit>
+			<trans-unit id="module.upload.target_language">
+				<source>Target language</source>
+			</trans-unit>
+			<trans-unit id="module.upload.csv_file">
+				<source>CSV file (*.csv)</source>
+			</trans-unit>
+			<trans-unit id="module.upload.submit">
 				<source>Upload a new glossary</source>
+			</trans-unit>
+			<trans-unit id="module.upload.message.deepl_error">
+				<source>DeepL returned an error: [%d] %s</source>
+			</trans-unit>
+			<trans-unit id="module.upload.message.no_file">
+				<source>The file was not uploaded</source>
+			</trans-unit>
+			<trans-unit id="module.upload.message.too_large">
+				<source>The file is too large for upload. Try using a command like command instead. See documentation for more information about using the command.</source>
+			</trans-unit>
+			<trans-unit id="module.upload.message.unknown_error">
+				<source>There was an error with code "%d", which we could not understand or recover from.</source>
+			</trans-unit>
+			<trans-unit id="module.upload.message.uploaded">
+				<source>The file was uploaded to DeepL successfully.</source>
+			</trans-unit>
+			<trans-unit id="module.upload.message.limit_reached">
+				<source>Limit of glossaries per language pair is reached. It is possible to upload only %d glossaries for a language pair. Please, delete one or more glossaries from the glossary overview page.</source>
+			</trans-unit>
+			<trans-unit id="module.upload.message.no_name">
+				<source>Name is missing.</source>
+			</trans-unit>
+			<trans-unit id="module.upload.message.same_languages">
+				<source>Languages must be different.</source>
 			</trans-unit>
 		</body>
 	</file>
