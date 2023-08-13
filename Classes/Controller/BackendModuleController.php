@@ -370,7 +370,7 @@ class BackendModuleController extends ActionController
                     'label' => 'module.button.download',
                     'action' => 'downloadGlossary',
                     'icon' => 'actions-download',
-                    'arguments' => ['glossaryId' => $_GET['tx_dddeepl_site_dddeepldddeepl']['glossaryId']],
+                    'arguments' => ['glossaryId' => $this->request->getQueryParams()['glossaryId']],
                 ];
                 break;
         }

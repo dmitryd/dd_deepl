@@ -30,15 +30,15 @@
 						<td>{glossary.glossaryId}</td>
 						<td>
 							<div class="btn-group">
-								<a class="btn btn-default" href="{f:be.uri(parameters: {tx_dddeepl_site_dddeepldddeepl: {action: 'viewGlossary', glossaryId: glossary.glossaryId}, id: id}, route: 'site_DdDeeplDdDeepl')}"><core:icon identifier="actions-view" /></a>
-								<a class="btn btn-default" href="{f:be.uri(parameters: {tx_dddeepl_site_dddeepldddeepl: {action: 'downloadGlossary', glossaryId: glossary.glossaryId}, id: id}, route: 'site_DdDeeplDdDeepl')}"><core:icon identifier="actions-download" /></a>
+								<a class="btn btn-default" href="{f:be.uri(parameters: {action: 'viewGlossary', glossaryId: glossary.glossaryId, id: id}, route: 'site_DdDeeplDdDeepl')}"><core:icon identifier="actions-view" /></a>
+								<a class="btn btn-default" href="{f:be.uri(parameters: {action: 'downloadGlossary', glossaryId: glossary.glossaryId, id: id}, route: 'site_DdDeeplDdDeepl')}"><core:icon identifier="actions-download" /></a>
 								<a class="btn btn-default t3js-modal-trigger"
 										data-severity="warning"
 										data-title="{f:translate(key: 'module.glossary.delete.modal.title')}"
 										data-bs-content="{f:translate(key: 'module.glossary.delete.modal.message')}"
 										data-button-close-text="{f:translate(key: 'LLL:EXT:core/Resources/Private/Language/locallang_common.xlf:cancel')}"
 										title="module.glossary.delete.modal.title"
-										href="{f:be.uri(parameters: {tx_dddeepl_site_dddeepldddeepl: {action: 'deleteGlossary', glossaryId: glossary.glossaryId}, id: id}, route: 'site_DdDeeplDdDeepl')}"
+										href="{f:be.uri(parameters: {action: 'deleteGlossary', glossaryId: glossary.glossaryId, id: id}, route: 'site_DdDeeplDdDeepl')}"
 								><core:icon identifier="actions-edit-delete" /></a>
 							</div>
 						</td>
