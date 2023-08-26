@@ -36,7 +36,7 @@ use TYPO3\CMS\Extbase\Configuration\BackendConfigurationManager;
  */
 class Configuration
 {
-    protected string $apiUrl = 'https://api.deepl.com';
+    protected string $apiUrl = '';
 
     protected string $apiKey = '';
 
@@ -51,14 +51,11 @@ class Configuration
         $ts = $configurationManager->getConfiguration('dddeepl');
         $ts = GeneralUtility::makeInstance(TypoScriptService::class)->convertPlainArrayToTypoScriptArray($ts);
 
-        $this->apiUrl = $configurationManager->getContentObject()->stdWrap(
-            $ts['settings.']['apiUrl'] ?? '',
-            $ts['settings.']['apiUrl.'] ?? [],
-        );
         $this->apiKey = $configurationManager->getContentObject()->stdWrap(
             $ts['settings.']['apiKey'] ?? '',
             $ts['settings.']['apiKey.'] ?? [],
         );
+        $this->apiUrl = str_ends_with($this->apiKey, ':fx') ? 'https://api-free.deepl.com' : 'https://api.deepl.com';
         if ($ts['settings.']['maximumNumberOfGlossariesPerLanguage'] ?? false) {
             $this->maximumNumberOfGlossaries = (int)$ts['settings.']['maximumNumberOfGlossariesPerLanguage'];
         }

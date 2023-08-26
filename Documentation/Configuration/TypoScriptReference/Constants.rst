@@ -8,18 +8,6 @@
 Constants
 =========
 
-..  confval:: apiUrl
-
-    :type: string
-    :Default: https://api.deepl.com
-
-    If you use a free API key, use https://api-free.deepl.com. Note that it should not end with a slash.
-
-    Example::
-
-       module.tx_dddeepl.apiUrl = https://api-free.deepl.com
-
-
 ..  confval:: apiKey
 
     :type: string

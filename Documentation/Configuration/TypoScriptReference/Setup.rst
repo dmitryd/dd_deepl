@@ -7,13 +7,6 @@
 Setup
 =====
 
-..  confval:: apiUrl
-
-    :type: string / stdWrap
-    :Default: :typoscript:`{$module.tx_dddeepl.settings.apiUrl}`
-
-    Default is a constant. But if there is environment variable named :php:`TYPO3_DEEPL_URL`, it will be used instead.
-
 ..  confval:: apiKey
 
     :type: string / stdWrap

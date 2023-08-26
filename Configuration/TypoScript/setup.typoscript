@@ -1,12 +1,6 @@
 module.tx_dddeepl {
   settings {
     # Plain text or stdWrap
-    apiUrl = {$module.tx_dddeepl.settings.apiUrl}
-    apiUrl {
-      override.data = getenv:TYPO3_DEEPL_URL
-    }
-
-    # Plain text or stdWrap
     apiKey = {$module.tx_dddeepl.settings.apiKey}
     apiKey {
       override.data = getenv:TYPO3_DEEPL_API_KEY
