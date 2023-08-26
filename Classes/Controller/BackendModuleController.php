@@ -211,7 +211,7 @@ class BackendModuleController extends ActionController
         try {
             $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($this->pageUid);
         } catch (SiteNotFoundException) {
-            // TODO Handle this
+            $this->redirect('noPageId');
         }
         $languages = [];
         foreach ($site->getAllLanguages() as $siteLanguage) {
