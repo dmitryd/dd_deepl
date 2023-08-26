@@ -44,6 +44,7 @@ This extension allows to translate content element, and records using DeepL.
     Introduction/Index
     Installation/Index
     Configuration/Index
+    Integrator/Index
     Editor/Index
     Developer/Index
 
