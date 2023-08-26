@@ -17,9 +17,11 @@ Translating content happens as usual by pressing a "Translate" button in the Pag
 
 For records each language for each available translation is duplicated and a new button with a DeepL icon on it appears:
 
+
 ..  figure:: /Images/ListModule.jpg
     :class: with-shadow
     :alt: List module
     :width: 500px
+
 
 Records will get translations if combination of a source and a target language is supported by DeepL.
