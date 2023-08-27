@@ -15,7 +15,10 @@ $EM_CONF[$_EXTKEY] = [
             'core' => '',
             'backend' => '',
         ],
-        'conflicts' => [],
+        'conflicts' => [
+            'deepltranslate',
+            'wv_deepltranslate',
+        ],
         'suggests' => [],
     ],
     'state' => 'stable',
