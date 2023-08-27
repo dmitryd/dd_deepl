@@ -6,7 +6,7 @@
 
 $EM_CONF[$_EXTKEY] = [
     'title' => 'DeepL translation for TYPO3 Backend',
-    'description' => 'Translates pages, content and records using DeeplL',
+    'description' => 'Translates pages, content and records using DeepL',
     'category' => 'be',
     'constraints' => [
         'depends' => [
