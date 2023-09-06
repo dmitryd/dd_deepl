@@ -8,7 +8,7 @@ For Integrators
 
 Integrators can do the following with the extension:
 
-* Add configuration (API key and host)
+* Add configuration (API key)
 * Manage glossaries
 
 Add configuration

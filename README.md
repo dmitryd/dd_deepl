@@ -12,13 +12,12 @@ Differences from other similar extensions are:
 
 ## Installation
 
-1. Install using composer:  
+1. Install using composer:
 ```
 composer req "dmitryd/dd-deepl"
 ```
 2. Add static Typoscript from `EXT:dd_deepl/Configuration/TypoScript/`
 3. Add DeepL API key either to TypoScript or to the `TYPO3_DEEPL_API_KEY` environment variable. You can get the key by registering with DeepL.
-4. If you use a free license, set API host to https://api-free.deepl.com/ either via TypoScript or `TYPO3_DEEPL_URL` environment variable.
 
 ## Usage
 
