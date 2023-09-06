@@ -22,10 +22,4 @@ Configure API key in the TypoScript constants like this:
 
   module.tx_dddeepl.settings.apiKey = <Insert your API key here>
 
-If you use a free API key, change the API host like this:
-
-.. code-block:: typoscript
-
-  module.tx_dddeepl.settings.apiUrl = https://api-free.deepl.com
-
-You can also set DeepL API key and host via web server environment varables :php:`TYPO3_DEEPL_API_KEY` and :php:`TYPO3_DEEPL_URL`.
+You can also set DeepL API key via web server environment varable :php:`TYPO3_DEEPL_API_KEY`.
