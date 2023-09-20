@@ -23,3 +23,7 @@ Configure API key in the TypoScript constants like this:
   module.tx_dddeepl.settings.apiKey = <Insert your API key here>
 
 You can also set DeepL API key via web server environment varable :php:`TYPO3_DEEPL_API_KEY`.
+
+..  warning::
+    Due to dependencies on various 3rd party packages, this extension works only if TYPO3 is installed in composer mode.
+    There will be no support for non-composer installations.

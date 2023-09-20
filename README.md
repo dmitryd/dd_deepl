@@ -19,6 +19,9 @@ composer req "dmitryd/dd-deepl"
 2. Add static Typoscript from `EXT:dd_deepl/Configuration/TypoScript/`
 3. Add DeepL API key either to TypoScript or to the `TYPO3_DEEPL_API_KEY` environment variable. You can get the key by registering with DeepL.
 
+
+**Warning!** Due to dependencies on various 3rd party packages, this extension works only if TYPO3 is installed in composer mode. There will be no support for non-composer installations.
+
 ## Usage
 
 When you translate the page or content, you will see an additional option for using DeepL for translations.
