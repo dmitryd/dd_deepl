@@ -33,6 +33,10 @@ DeepL Translate TYPO3 extension
 
 This extension allows to translate content element, and records using DeepL.
 
+..  warning::
+    Due to dependencies on various 3rd party packages, this extension works only if TYPO3 is installed in composer mode.
+    There will be no support for non-composer installations.
+
 ----
 
 **Table of Contents:**
