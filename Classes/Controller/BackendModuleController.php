@@ -254,8 +254,7 @@ class BackendModuleController extends ActionController
             }
         } elseif (!is_uploaded_file($_FILES['file']['tmp_name'])) {
             $message = 'no_file';
-        }
-        elseif (trim($glossaryName) === ''){
+        } elseif (trim($glossaryName) === '') {
             $message = 'no_name';
         } elseif ($sourceLanguage === $targetLanguage) {
             $message = 'same_languages';
@@ -305,15 +304,14 @@ class BackendModuleController extends ActionController
                 ],
                 $this->pageUid
             );
-        } else {
-            return $this->redirect(
-                'glossary',
-                null,
-                null,
-                [],
-                $this->pageUid
-            );
         }
+        return $this->redirect(
+            'glossary',
+            null,
+            null,
+            [],
+            $this->pageUid
+        );
     }
 
     /**
