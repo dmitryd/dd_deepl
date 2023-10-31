@@ -17,7 +17,7 @@ Constants
 
     Example::
 
-       module.tx_dddeepl.apiKey = <your value here>
+       module.tx_dddeepl.settings.apiKey = <your value here>
 
 ..  confval:: maximumNumberOfGlossariesPerLanguage
 
@@ -28,5 +28,5 @@ Constants
 
     Example::
 
-       module.tx_dddeepl.maximumNumberOfGlossariesPerLanguage = 2
+       module.tx_dddeepl.settings.maximumNumberOfGlossariesPerLanguage = 2
 
