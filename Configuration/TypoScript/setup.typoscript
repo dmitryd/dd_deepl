@@ -9,3 +9,5 @@ module.tx_dddeepl {
     maximumNumberOfGlossariesPerLanguage = {$module.tx_dddeepl.settings.maximumNumberOfGlossariesPerLanguage}
   }
 }
+
+module.tx_dddeepl_ < module.tx_dddeepl
