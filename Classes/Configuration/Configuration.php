@@ -28,6 +28,7 @@ namespace Dmitryd\DdDeepl\Configuration;
 use TYPO3\CMS\Core\TypoScript\TypoScriptService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Configuration\BackendConfigurationManager;
+use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
 
 /**
  * This class contains configuration methods.
@@ -48,10 +49,11 @@ class Configuration
     public function __construct()
     {
         $configurationManager = GeneralUtility::makeInstance(BackendConfigurationManager::class);
-        $ts = $configurationManager->getConfiguration('dddeepl');
-        $ts = GeneralUtility::makeInstance(TypoScriptService::class)->convertPlainArrayToTypoScriptArray($ts);
+        $ts = $configurationManager->getTypoScriptSetup();
+        $ts = $ts['module.']['tx_dddeepl.'] ?? [];
 
-        $this->apiKey = $configurationManager->getContentObject()->stdWrap(
+        $contentObject = GeneralUtility::makeInstance(ContentObjectRenderer::class);
+        $this->apiKey = $contentObject->stdWrap(
             $ts['settings.']['apiKey'] ?? '',
             $ts['settings.']['apiKey.'] ?? [],
         );
