@@ -136,8 +136,12 @@ class DataHandlerTranslationHook
                     $localDataHandler->start($data, [], $dataHandler->BE_USER);
                     $localDataHandler->process_datamap();
                 } catch (DeepLException $exception) {
-                    $message = $GLOBALS['LANG']->sL('LLL:EXT:dd_deepl/Resources/Private/Language/locallang.xlf:translation_error');
-                    $message = sprintf($message, $tableName, $record['uid'], $exception->getMessage());
+                    $message = sprintf(
+                        'Unable to translate record %1$s#%2$d using DeepL. Error: %3$s',
+                        $tableName,
+                        $record['uid'],
+                        $exception->getMessage()
+                    );
                     $dataHandler->log($tableName, $record['uid'], 2, 0, 1, $message);
                     $this->logger->error(
                         sprintf(
