@@ -41,6 +41,7 @@ use Dmitryd\DdDeepl\Event\CanFieldBeTranslatedCheckEvent;
 use Dmitryd\DdDeepl\Event\PreprocessFieldValueEvent;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
+use TYPO3\CMS\Core\Localization\Locale;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Site\SiteFinder;
@@ -272,8 +273,8 @@ class DeeplTranslationService implements SingletonInterface
 
         $fieldValue = $this->translateText(
             $fieldValue,
-            $this->updateLanguageCode($sourceLanguage->getTwoLetterIsoCode()),
-            $this->updateLanguageCode($targetLanguage->getTwoLetterIsoCode())
+            $this->getLanguageCodeFromLocale($sourceLanguage->getLocale()),
+            $this->getLanguageCodeFromLocale($targetLanguage->getLocale())
         );
 
         $event = GeneralUtility::makeInstance(AfterFieldTranslatedEvent::class, $tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
@@ -406,11 +407,16 @@ class DeeplTranslationService implements SingletonInterface
     /**
      * Deepl needs some languages codes to be different from TYPO3 ones. This method updates such codes.
      *
-     * @param string $languageCode
+     * @param Locale $locale
      * @return string
      */
-    protected function updateLanguageCode(string $languageCode): string
+    protected function getLanguageCodeFromLocale(Locale $locale): string
     {
-        return $languageCode === 'en' ? 'en-US' : $languageCode;
+        $languageCode = $locale->getLanguageCode();
+        if ($languageCode === 'en' || $languageCode === 'pt') {
+            $languageCode = str_replace('_', '-', $locale->getName());
+        }
+
+        return $languageCode;
     }
 }
