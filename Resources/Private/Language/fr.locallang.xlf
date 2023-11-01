@@ -20,6 +20,10 @@
 					informations confidentielles ou sensibles en dehors de votre entreprise.
 				</target>
 			</trans-unit>
+			<trans-unit id="translation_error">
+				<source>Unable to translate record %1$s#%2$d using DeepL. Error: %3$s.</source>
+				<target>Impossible de traduire l'enregistrement %1$s#%2$d en utilisant DeepL. Erreur : %3$s</target>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>

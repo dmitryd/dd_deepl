@@ -27,6 +27,7 @@ namespace Dmitryd\DdDeepl\Hook;
 
 use DeepL\DeepLException;
 use Dmitryd\DdDeepl\Service\DeeplTranslationService;
+use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
@@ -52,6 +53,15 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class DataHandlerTranslationHook
 {
+    /**
+     * Creates the instance of the class.
+     *
+     * @param \Psr\Log\LoggerInterface $logger
+     */
+    public function __construct(protected LoggerInterface $logger)
+    {
+    }
+
     /**
      * Processes our custom command and translates the record. Translations
      * have to happen in the post-process hook because of EXT:container,
@@ -125,8 +135,19 @@ class DataHandlerTranslationHook
                     $localDataHandler = GeneralUtility::makeInstance(DataHandler::class);
                     $localDataHandler->start($data, [], $dataHandler->BE_USER);
                     $localDataHandler->process_datamap();
-                } catch (DeepLException) {
-                    // TODO Logging here about failure reasons
+                } catch (DeepLException $exception) {
+                    $message = $GLOBALS['LANG']->sL('LLL:EXT:dd_deepl/Resources/Private/Language/locallang.xlf:translation_error');
+                    $message = sprintf($message, $tableName, $record['uid'], $exception->getMessage());
+                    $dataHandler->log($tableName, $record['uid'], 2, 0, 1, $message);
+                    $this->logger->error(
+                        sprintf(
+                            'Unable to translate %s#%d. Message: \'%s\'. Stack: %s',
+                            $tableName,
+                            $record['uid'],
+                            $exception->getMessage(),
+                            $exception->getTraceAsString()
+                        )
+                    );
                 }
             }
         }

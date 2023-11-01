@@ -14,3 +14,6 @@ services:
         description: 'Uploads, downloads, lists, or deletes DeepL glossaries using account settings in the current TYPO3 version'
         hidden: false
         schedulable: false
+
+  Dmitryd\DdDeepl\Hook\DataHandlerTranslationHook:
+    public: true
