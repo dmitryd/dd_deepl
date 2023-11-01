@@ -161,9 +161,6 @@
 			<trans-unit id="module.upload.message.same_languages">
 				<source>Languages must be different.</source>
 			</trans-unit>
-			<trans-unit id="translation_error">
-				<source>Unable to translate record %1$s#%2$d using DeepL. Error: %3$s</source>
-			</trans-unit>
 		</body>
 	</file>
 </xliff>
