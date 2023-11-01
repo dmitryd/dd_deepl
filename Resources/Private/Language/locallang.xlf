@@ -119,6 +119,9 @@
 			<trans-unit id="module.error">
 				<source>There was a problem with DeepL: [%d] %s</source>
 			</trans-unit>
+			<trans-unit id="translation_error">
+				<source>Unable to translate record %1$s#%2$d using DeepL. Error: %3$s</source>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>
