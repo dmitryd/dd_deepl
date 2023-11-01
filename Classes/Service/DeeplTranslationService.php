@@ -411,6 +411,14 @@ class DeeplTranslationService implements SingletonInterface
      */
     protected function updateLanguageCode(string $languageCode): string
     {
-        return $languageCode === 'en' ? 'en-US' : $languageCode;
+        switch ($languageCode) {
+            case 'en':
+                $languageCode = 'en-US';
+                break;
+            case 'pt':
+                $languageCode = 'pt-PT';
+                break;
+        }
+        return $languageCode;
     }
 }
