@@ -42,9 +42,11 @@ use Dmitryd\DdDeepl\Event\BeforeFieldTranslationEvent;
 use Dmitryd\DdDeepl\Event\BeforeRecordTranslationEvent;
 use Dmitryd\DdDeepl\Event\CanFieldBeTranslatedCheckEvent;
 use Dmitryd\DdDeepl\Event\PreprocessFieldValueEvent;
+use Psr\Log\LoggerAwareTrait;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Localization\Locale;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Site\SiteFinder;
@@ -57,6 +59,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class DeeplTranslationService implements SingletonInterface
 {
+    use LoggerAwareTrait;
+
     protected Configuration $configuration;
 
     protected EventDispatcher $eventDispatcher;
@@ -93,6 +97,8 @@ class DeeplTranslationService implements SingletonInterface
             $this->sourceLanguages = $this->translator->getSourceLanguages();
             $this->targetLanguages = $this->translator->getTargetLanguages();
         }
+
+        $this->setLogger(GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__));
     }
 
     /**
@@ -241,9 +247,21 @@ class DeeplTranslationService implements SingletonInterface
         $canTranslate = true;
         $sourceLanguage = $this->getRecordSourceLanguage($tableName, $record);
         if (!$this->isSupportedLanguage($sourceLanguage, $this->sourceLanguages)) {
+            $this->logger->notice(
+                sprintf(
+                    'Language "%s" cannot be used as a source language because it is not supported',
+                    $sourceLanguage->getLocale()->getLanguageCode()
+                )
+            );
             $canTranslate = false;
         }
         if (!$this->isSupportedLanguage($targetLanguage, $this->targetLanguages)) {
+            $this->logger->notice(
+                sprintf(
+                    'Language "%s" cannot be used as a target language because it is not supported',
+                    $targetLanguage->getLocale()->getLanguageCode()
+                )
+            );
             $canTranslate = false;
         }
         if ($canTranslate && isset($GLOBALS['TCA'][$tableName])) {
