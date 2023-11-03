@@ -273,8 +273,8 @@ class DeeplTranslationService implements SingletonInterface
 
         $fieldValue = $this->translateText(
             $fieldValue,
-            $this->getLanguageCodeFromLocale($sourceLanguage->getLocale()),
-            $this->getLanguageCodeFromLocale($targetLanguage->getLocale())
+            $sourceLanguage->getLocale()->getLanguageCode(),
+            $this->getTargetLanguageCodeFromLocale($targetLanguage->getLocale())
         );
 
         $event = GeneralUtility::makeInstance(AfterFieldTranslatedEvent::class, $tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
@@ -382,6 +382,40 @@ class DeeplTranslationService implements SingletonInterface
     }
 
     /**
+     * DeepL deprecated some language codes. We need to fix those to be compatible.
+     * Currently only target language codes 'en' and 'pt' are deprecated. They
+     * must include country part. DeepL does not yet have a proper API for this.
+     *
+     * @param Locale $locale
+     * @return string
+     */
+    protected function getTargetLanguageCodeFromLocale(Locale $locale): string
+    {
+        static $replacements = [
+            LanguageCode::ENGLISH => [
+                LanguageCode::ENGLISH_AMERICAN,
+                LanguageCode::ENGLISH_BRITISH,
+            ],
+            LanguageCode::PORTUGUESE => [
+                LanguageCode::PORTUGUESE_EUROPEAN,
+                LanguageCode::PORTUGUESE_BRAZILIAN,
+            ],
+        ];
+        $result = $languageCode = $locale->getLanguageCode();
+        if ($replacements[$languageCode] ?? false) {
+            $result = LanguageCode::standardizeLanguageCode(
+                str_replace('_', '-', $locale->getName())
+            );
+            // Check if supported by DeepL
+            if (!in_array($result, $replacements[$languageCode])) {
+                // Fallback to the default
+                $result = $replacements[$languageCode][0];
+            }
+        }
+
+        return $result;
+    }
+    /**
      * Preprocesses the field depending on its value.
      *
      * @param string $tableName
@@ -402,21 +436,5 @@ class DeeplTranslationService implements SingletonInterface
         $fieldValue = $event->getFieldValue();
 
         return $fieldValue;
-    }
-
-    /**
-     * Deepl needs some languages codes to be different from TYPO3 ones. This method updates such codes.
-     *
-     * @param Locale $locale
-     * @return string
-     */
-    protected function getLanguageCodeFromLocale(Locale $locale): string
-    {
-        $languageCode = $locale->getLanguageCode();
-        if ($languageCode === 'en' || $languageCode === 'pt') {
-            $languageCode = str_replace('_', '-', $locale->getName());
-        }
-
-        return $languageCode;
     }
 }
