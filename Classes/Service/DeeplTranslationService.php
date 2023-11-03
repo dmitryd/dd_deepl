@@ -242,44 +242,27 @@ class DeeplTranslationService implements SingletonInterface
         $record = $event->getRecord();
         $exceptFieldNames = $event->getExceptFieldNames();
 
-        $canTranslate = true;
+        $wasTranslated = false;
         $sourceLanguage = $this->getRecordSourceLanguage($tableName, $record);
-        if (!$this->isSupportedLanguage($sourceLanguage, $this->sourceLanguages)) {
-            $this->logger->notice(
-                sprintf(
-                    'Language "%s" cannot be used as a source language because it is not supported',
-                    $sourceLanguage->getLocale()->getLanguageCode()
-                )
-            );
-            $canTranslate = false;
-        }
-        if (!$this->isSupportedLanguage($targetLanguage, $this->targetLanguages)) {
-            $this->logger->notice(
-                sprintf(
-                    'Language "%s" cannot be used as a target language because it is not supported',
-                    $targetLanguage->getLocale()->getLanguageCode()
-                )
-            );
-            $canTranslate = false;
-        }
-        if ($canTranslate && isset($GLOBALS['TCA'][$tableName])) {
+        if ($this->canTranslate($sourceLanguage, $targetLanguage) && isset($GLOBALS['TCA'][$tableName])) {
             foreach ($record as $fieldName => $fieldValue) {
                 if (isset($GLOBALS['TCA'][$tableName]['columns'][$fieldName]) && !in_array($fieldName, $exceptFieldNames)) {
                     $config = $GLOBALS['TCA'][$tableName]['columns'][$fieldName];
                     if ($this->canFieldBeTranslated($tableName, $fieldName, $fieldValue, $config)) {
-                        $translatedFields[$fieldName] = $this->translateField(
+                        $translatedFields[$fieldName] = $this->translateFieldInternal(
                             $tableName,
                             $fieldName,
                             $fieldValue,
                             $sourceLanguage,
                             $targetLanguage
                         );
+                        $wasTranslated = $translatedFields[$fieldName] !== $fieldValue;
                     }
                 }
             }
         }
 
-        $event = GeneralUtility::makeInstance(AfterRecordTranslatedEvent::class, $tableName, $record, $targetLanguage, $translatedFields);
+        $event = GeneralUtility::makeInstance(AfterRecordTranslatedEvent::class, $tableName, $record, $targetLanguage, $translatedFields, $wasTranslated);
         $this->eventDispatcher->dispatch($event);
         /** @noinspection PhpUnnecessaryLocalVariableInspection */
         $translatedFields = $event->getTranslatedFields();
@@ -300,28 +283,15 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function translateField(string $tableName, string $fieldName, string $fieldValue, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): string
     {
-        $fieldValue = $this->preprocessValueDependingOnType($tableName, $fieldName, (string)$fieldValue, $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config']);
-
-        $event = GeneralUtility::makeInstance(BeforeFieldTranslationEvent::class, $tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
-        $this->eventDispatcher->dispatch($event);
-        $fieldValue = $event->getFieldValue();
-
-        $fieldValue = $this->translateText(
-            $fieldValue,
-            $sourceLanguage->getLocale()->getLanguageCode(),
-            $this->getTargetLanguageCodeFromLocale($targetLanguage->getLocale())
-        );
-
-        $event = GeneralUtility::makeInstance(AfterFieldTranslatedEvent::class, $tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
-        $this->eventDispatcher->dispatch($event);
-        /** @noinspection PhpUnnecessaryLocalVariableInspection */
-        $fieldValue = $event->getFieldValue();
+        if ($this->canTranslate($sourceLanguage, $targetLanguage)) {
+            $fieldValue = $this->translateFieldInternal($tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
+        }
 
         return $fieldValue;
     }
 
     /**
-     * Translates the record.
+     * Translates the text.
      *
      * @param string $text
      * @param string $sourceLanguage
@@ -385,6 +355,38 @@ class DeeplTranslationService implements SingletonInterface
         $result = $event->getCanBeTranslated();
 
         return (bool)$result;
+    }
+
+    /**
+     * Checks if translation is supported for these languages.
+     *
+     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $sourceLanguage
+     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
+     * @return bool
+     */
+    protected function canTranslate(SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): bool
+    {
+        $canTranslate = true;
+        if (!$this->isSupportedLanguage($sourceLanguage, $this->sourceLanguages)) {
+            $this->logger->notice(
+                sprintf(
+                    'Language "%s" cannot be used as a source language because it is not supported',
+                    $sourceLanguage->getLocale()->getLanguageCode()
+                )
+            );
+            $canTranslate = false;
+        }
+        if (!$this->isSupportedLanguage($targetLanguage, $this->targetLanguages)) {
+            $this->logger->notice(
+                sprintf(
+                    'Language "%s" cannot be used as a target language because it is not supported',
+                    $targetLanguage->getLocale()->getLanguageCode()
+                )
+            );
+            $canTranslate = false;
+        }
+
+        return $canTranslate;
     }
 
     /**
@@ -485,6 +487,40 @@ class DeeplTranslationService implements SingletonInterface
         }
 
         $event = GeneralUtility::makeInstance(PreprocessFieldValueEvent::class, $tableName, $fieldName, $fieldValue);
+        $this->eventDispatcher->dispatch($event);
+        /** @noinspection PhpUnnecessaryLocalVariableInspection */
+        $fieldValue = $event->getFieldValue();
+
+        return $fieldValue;
+    }
+
+
+    /**
+     * Translates a single field.
+     *
+     * @param string $tableName
+     * @param string $fieldName
+     * @param string $fieldValue
+     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $sourceLanguage
+     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
+     * @return string
+     * @throws \DeepL\DeepLException
+     */
+    protected function translateFieldInternal(string $tableName, string $fieldName, string $fieldValue, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): string
+    {
+        $fieldValue = $this->preprocessValueDependingOnType($tableName, $fieldName, (string)$fieldValue, $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config']);
+
+        $event = GeneralUtility::makeInstance(BeforeFieldTranslationEvent::class, $tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
+        $this->eventDispatcher->dispatch($event);
+        $fieldValue = $event->getFieldValue();
+
+        $fieldValue = $this->translateText(
+            $fieldValue,
+            $sourceLanguage->getLocale()->getLanguageCode(),
+            $this->getTargetLanguageCodeFromLocale($targetLanguage->getLocale())
+        );
+
+        $event = GeneralUtility::makeInstance(AfterFieldTranslatedEvent::class, $tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
         $this->eventDispatcher->dispatch($event);
         /** @noinspection PhpUnnecessaryLocalVariableInspection */
         $fieldValue = $event->getFieldValue();
