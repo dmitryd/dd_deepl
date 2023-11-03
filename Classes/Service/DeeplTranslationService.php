@@ -29,6 +29,8 @@ use DeepL\DeepLException;
 use DeepL\GlossaryEntries;
 use DeepL\GlossaryInfo;
 use DeepL\GlossaryLanguagePair;
+use DeepL\Language;
+use DeepL\LanguageCode;
 use DeepL\Translator;
 use DeepL\TranslatorOptions;
 use DeepL\Usage;
@@ -58,6 +60,12 @@ class DeeplTranslationService implements SingletonInterface
 
     protected EventDispatcher $eventDispatcher;
 
+    /** @var \DeepL\Language[] */
+    protected array $sourceLanguages = [];
+
+    /** @var \DeepL\Language[] */
+    protected array $targetLanguages = [];
+
     protected ?Translator $translator = null;
 
     /**
@@ -80,6 +88,8 @@ class DeeplTranslationService implements SingletonInterface
         $apiKey = $this->configuration->getApiKey();
         if ($apiKey) {
             $this->translator = new Translator($apiKey, $deeplOptions);
+            $this->sourceLanguages = $this->translator->getSourceLanguages();
+            $this->targetLanguages = $this->translator->getTargetLanguages();
         }
     }
 
@@ -226,8 +236,15 @@ class DeeplTranslationService implements SingletonInterface
         $record = $event->getRecord();
         $exceptFieldNames = $event->getExceptFieldNames();
 
-        if (isset($GLOBALS['TCA'][$tableName])) {
-            $sourceLanguage = $this->getRecordSourceLanguage($tableName, $record);
+        $canTranslate = true;
+        $sourceLanguage = $this->getRecordSourceLanguage($tableName, $record);
+        if (!$this->isSupportedLanguage($sourceLanguage, $this->sourceLanguages)) {
+            $canTranslate = false;
+        }
+        if (!$this->isSupportedLanguage($targetLanguage, $this->targetLanguages)) {
+            $canTranslate = false;
+        }
+        if ($canTranslate && isset($GLOBALS['TCA'][$tableName])) {
             foreach ($record as $fieldName => $fieldValue) {
                 if (isset($GLOBALS['TCA'][$tableName]['columns'][$fieldName]) && !in_array($fieldName, $exceptFieldNames)) {
                     $config = $GLOBALS['TCA'][$tableName]['columns'][$fieldName];
@@ -415,6 +432,25 @@ class DeeplTranslationService implements SingletonInterface
 
         return $result;
     }
+
+    /**
+     * Checks if the language is supported by DeepL.
+     *
+     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $siteLanguage
+     * @param \DeepL\Language[] $languages
+     * @return bool
+     */
+    protected function isSupportedLanguage(SiteLanguage $siteLanguage, array $languages): bool
+    {
+        $languageCode = $siteLanguage->getLocale()->getLanguageCode();
+        $matchingLanguages = array_filter($languages, function (Language $language) use ($languageCode) : bool {
+            [$testCode] = explode('-', $language->code);
+            return strcasecmp($languageCode, $testCode) === 0;
+        });
+
+        return !empty($matchingLanguages);
+    }
+
     /**
      * Preprocesses the field depending on its value.
      *
