@@ -42,7 +42,7 @@ final class AfterRecordTranslatedEvent
      * @param array $record
      * @param array $translatedFields
      */
-    public function __construct(protected string $tableName, protected array $record, protected SiteLanguage $targetLanguage, protected array $translatedFields)
+    public function __construct(protected string $tableName, protected array $record, protected SiteLanguage $targetLanguage, protected array $translatedFields, protected bool $wasTranslated)
     {
     }
 
@@ -94,5 +94,15 @@ final class AfterRecordTranslatedEvent
     public function setTranslatedFields(array $translatedFields): void
     {
         $this->translatedFields = $translatedFields;
+    }
+
+    /**
+     * Tells if any field was translated.
+     *
+     * @return bool
+     */
+    public function getWasTranslated(): bool
+    {
+        return $this->wasTranslated;
     }
 }
