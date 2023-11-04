@@ -43,6 +43,7 @@ use Dmitryd\DdDeepl\Event\BeforeRecordTranslationEvent;
 use Dmitryd\DdDeepl\Event\CanFieldBeTranslatedCheckEvent;
 use Dmitryd\DdDeepl\Event\PreprocessFieldValueEvent;
 use Psr\Log\LoggerAwareTrait;
+use TYPO3\CMS\Core\Configuration\FlexForm\FlexFormTools;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Localization\Locale;
@@ -251,13 +252,28 @@ class DeeplTranslationService implements SingletonInterface
                 if (isset($GLOBALS['TCA'][$tableName]['columns'][$fieldName]) && !in_array($fieldName, $exceptFieldNames)) {
                     $config = $GLOBALS['TCA'][$tableName]['columns'][$fieldName];
                     if ($this->canFieldBeTranslated($tableName, $fieldName, $fieldValue, $config)) {
-                        $translatedFields[$fieldName] = $this->translateFieldInternal(
-                            $tableName,
-                            $fieldName,
-                            $fieldValue,
-                            $sourceLanguage,
-                            $targetLanguage
-                        );
+                        if ($config['config']['type'] === 'flex') {
+                            $ds = $this->getFlexformDataStructure($tableName, $fieldName, $record);
+                            if ($ds) {
+                                $translatedFields[$fieldName] = $this->translateFlexformField(
+                                    $tableName,
+                                    $fieldName,
+                                    $fieldValue,
+                                    $ds,
+                                    $sourceLanguage,
+                                    $targetLanguage
+                                );
+                            }
+                        } else {
+                            $translatedFields[$fieldName] = $this->translateFieldInternal(
+                                $tableName,
+                                $fieldName,
+                                $fieldValue,
+                                $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config'],
+                                $sourceLanguage,
+                                $targetLanguage
+                            );
+                        }
                         $wasTranslated = $translatedFields[$fieldName] !== $fieldValue;
                     }
                 }
@@ -286,7 +302,16 @@ class DeeplTranslationService implements SingletonInterface
     public function translateField(string $tableName, string $fieldName, string $fieldValue, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): string
     {
         if ($this->canTranslate($sourceLanguage, $targetLanguage)) {
-            $fieldValue = $this->translateFieldInternal($tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
+            if ($this->canTranslate($sourceLanguage, $targetLanguage)) {
+                $fieldValue = $this->translateFieldInternal(
+                    $tableName,
+                    $fieldName,
+                    $fieldValue,
+                    $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config'],
+                    $sourceLanguage,
+                    $targetLanguage
+                );
+            }
         }
 
         return $fieldValue;
@@ -348,12 +373,18 @@ class DeeplTranslationService implements SingletonInterface
                 // All kind of special values
                 $result = false;
             }
+            if (preg_match('/^[\d\.]+[a-z]*$/i', $fieldValue)) {
+                // Looks like '15px' or '0.1234'
+                $result = false;
+            }
         } elseif ($tcaConfiguration['config']['type'] === 'text') {
             $result = true;
             if (isset($tcaConfiguration['config']['renderType']) && $tcaConfiguration['config']['renderType'] !== 'default') {
                 // Anything that is not default is not translatable
                 $result = false;
             }
+        } elseif ($tcaConfiguration['config']['type'] === 'flex') {
+            $result = true;
         }
 
         $event = GeneralUtility::makeInstance(CanFieldBeTranslatedCheckEvent::class, $tableName, $fieldName, $result);
@@ -393,6 +424,50 @@ class DeeplTranslationService implements SingletonInterface
         }
 
         return $canTranslate;
+    }
+
+    /**
+     * Resolves the data structure for the flexform field.
+     *
+     * @param string $tableName
+     * @param string $fieldName
+     * @param array $databaseRow
+     * @return array|null
+     * @see \TYPO3\CMS\Backend\Form\FormDataProvider\TcaFlexPrepare::initializeDataStructure()
+     */
+    protected function getFlexformDataStructure(string $tableName, string $fieldName, array $databaseRow): ?array
+    {
+        $flexFormTools = GeneralUtility::makeInstance(FlexFormTools::class);
+        if (!isset($GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config']['dataStructureIdentifier'])) {
+            try {
+                $dataStructureIdentifier = $flexFormTools->getDataStructureIdentifier(
+                    $GLOBALS['TCA'][$tableName]['columns'][$fieldName],
+                    $tableName,
+                    $fieldName,
+                    $databaseRow
+                );
+                $dataStructureArray = $flexFormTools->parseDataStructureByIdentifier($dataStructureIdentifier);
+            } catch (\Exception $exception) {
+                $this->logger->debug(
+                    sprintf(
+                        'Exception %s, code %d, message: "%s" while fetching datas tructure for %s.%s',
+                        get_class($exception),
+                        $exception->getCode(),
+                        $exception->getMessage(),
+                        $tableName,
+                        $fieldName
+                    )
+                );
+                $dataStructureArray = null;
+            }
+        } else {
+            // Assume the data structure has been given from outside if the data structure identifier is already set.
+            $dataStructureArray = $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config']['ds'];
+            $dataStructureArray = $flexFormTools->removeElementTceFormsRecursive($dataStructureArray);
+            $dataStructureArray = $flexFormTools->migrateFlexFormTcaRecursive($dataStructureArray);
+        }
+
+        return $dataStructureArray;
     }
 
     /**
@@ -500,7 +575,6 @@ class DeeplTranslationService implements SingletonInterface
         return $fieldValue;
     }
 
-
     /**
      * Translates a single field.
      *
@@ -512,9 +586,9 @@ class DeeplTranslationService implements SingletonInterface
      * @return string
      * @throws \DeepL\DeepLException
      */
-    protected function translateFieldInternal(string $tableName, string $fieldName, string $fieldValue, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): string
+    protected function translateFieldInternal(string $tableName, string $fieldName, string $fieldValue, array $tcaConfig, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): string
     {
-        $fieldValue = $this->preprocessValueDependingOnType($tableName, $fieldName, (string)$fieldValue, $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config']);
+        $fieldValue = $this->preprocessValueDependingOnType($tableName, $fieldName, (string)$fieldValue, $tcaConfig);
 
         $event = GeneralUtility::makeInstance(BeforeFieldTranslationEvent::class, $tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
         $this->eventDispatcher->dispatch($event);
@@ -530,6 +604,77 @@ class DeeplTranslationService implements SingletonInterface
         $this->eventDispatcher->dispatch($event);
         /** @noinspection PhpUnnecessaryLocalVariableInspection */
         $fieldValue = $event->getFieldValue();
+
+        return $fieldValue;
+    }
+
+    /**
+     * Translates a single sheet.
+     *
+     * Note: this will break sections currently!
+     *
+     * @param string $tableName
+     * @param string $fieldName
+     * @param string $sheetName
+     * @param array $fields
+     * @param array $ds
+     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $sourceLanguage
+     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
+     * @return array
+     * @throws \DeepL\DeepLException
+     */
+    protected function translateFlexformSheetFields(string $tableName, string $fieldName, string $sheetName, array $fields, array $ds, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): array
+    {
+        foreach ($fields as $name => &$field) {
+            // TODO This will break sections!
+            if (($config = $ds['sheets'][$sheetName]['ROOT']['el'][$name] ?? false)) {
+                if ($this->canFieldBeTranslated($tableName, $fieldName . '.' . $name, $field['vDEF'], $config)) {
+                    $field['vDEF'] = $this->translateFieldInternal(
+                        $tableName,
+                        $fieldName . '.' . $sheetName . '.' . $fieldName . '.' . $name,
+                        $field['vDEF'],
+                        $config['config'],
+                        $sourceLanguage,
+                        $targetLanguage
+                    );
+                }
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Translates a single field.
+     *
+     * @param string $tableName
+     * @param string $fieldName
+     * @param string $fieldValue
+     * @param array $ds
+     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $sourceLanguage
+     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
+     * @return string
+     * @throws \DeepL\DeepLException
+     */
+    protected function translateFlexformField(string $tableName, string $fieldName, string $fieldValue, array $ds, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): string
+    {
+        $fields = GeneralUtility::xml2array($fieldValue);
+
+        foreach ($fields['data'] as $sheetName => &$sheetData) {
+            $sheetData['lDEF'] = $this->translateFlexformSheetFields(
+                $tableName,
+                $fieldName,
+                $sheetName,
+                $sheetData['lDEF'],
+                $ds,
+                $sourceLanguage,
+                $targetLanguage
+            );
+        }
+
+        $tools = GeneralUtility::makeInstance(FlexFormTools::class);
+        /** @var FlexFormTools $tools */
+        $fieldValue = $tools->flexArray2Xml($fields, true);
 
         return $fieldValue;
     }
