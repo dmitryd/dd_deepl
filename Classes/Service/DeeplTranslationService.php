@@ -400,8 +400,7 @@ class DeeplTranslationService implements SingletonInterface
                 )
             );
             $canTranslate = false;
-        }
-        if (!$this->isSupportedLanguage($targetLanguage, $this->targetLanguages)) {
+        } elseif (!$this->isSupportedLanguage($targetLanguage, $this->targetLanguages)) {
             $this->logger->notice(
                 sprintf(
                     'Language "%s" cannot be used as a target language because it is not supported',
