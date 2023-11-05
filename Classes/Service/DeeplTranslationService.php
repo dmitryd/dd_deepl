@@ -611,17 +611,22 @@ class DeeplTranslationService implements SingletonInterface
     protected function translateFlexformSheetFields(string $tableName, string $fieldName, string $sheetName, array $fields, array $ds, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): array
     {
         foreach ($fields as $name => &$field) {
-            // TODO This will break sections!
             if (($config = $ds['sheets'][$sheetName]['ROOT']['el'][$name] ?? false)) {
-                if ($this->canFieldBeTranslated($tableName, $fieldName . '.' . $name, $field['vDEF'], $config)) {
-                    $field['vDEF'] = $this->translateFieldInternal(
-                        $tableName,
-                        $fieldName . '.' . $sheetName . '.' . $fieldName . '.' . $name,
-                        $field['vDEF'],
-                        $config['config'],
-                        $sourceLanguage,
-                        $targetLanguage
-                    );
+                $currentFlexformFieldName = $fieldName . '.' . $sheetName . '.' . $fieldName . '.' . $name;
+                if ($field['vDEF'] ?? false) {
+                    // Regular field
+                    if ($this->canFieldBeTranslated($tableName, $fieldName . '.' . $name, $field['vDEF'], $config)) {
+                        $field['vDEF'] = $this->translateFieldInternal(
+                            $tableName,
+                            $currentFlexformFieldName,
+                            $field['vDEF'],
+                            $config['config'],
+                            $sourceLanguage,
+                            $targetLanguage
+                        );
+                    }
+                } elseif ($config['section'] ?? false) {
+                    $field['el'] = $this->translateFlexformSection($tableName, $currentFlexformFieldName, $ds, $config, $field['el'], $sourceLanguage, $targetLanguage);
                 }
             }
         }
@@ -662,5 +667,41 @@ class DeeplTranslationService implements SingletonInterface
         $fieldValue = $tools->flexArray2Xml($fields, true);
 
         return $fieldValue;
+    }
+
+    /**
+     * Translates a single flexform section.
+     *
+     * @param string $tableName
+     * @param string $currentFlexformFieldName
+     * @param array $ds
+     * @param array $config
+     * @param array $section
+     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $sourceLanguage
+     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
+     * @return array
+     * @throws \DeepL\DeepLException
+     */
+    protected function translateFlexformSection(string $tableName, string $currentFlexformFieldName, array $ds, array $config, array &$section, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): array
+    {
+        $sectionField = array_key_first($config['el']);
+        foreach ($section as $k => &$structure) {
+            foreach ($structure[$sectionField]['el'] as $name => &$field) {
+                $fullFieldName = $currentFlexformFieldName . '.' . $k . '.' . $name;
+                $fieldTcaConfig = &$config['el'][$sectionField]['el'][$name];
+                if ($this->canFieldBeTranslated($tableName, $fullFieldName, $field['vDEF'], $fieldTcaConfig)) {
+                    $field['vDEF'] = $this->translateFieldInternal(
+                        $tableName,
+                        $currentFlexformFieldName,
+                        $field['vDEF'],
+                        $fieldTcaConfig['config'],
+                        $sourceLanguage,
+                        $targetLanguage
+                    );
+                }
+            }
+        }
+
+        return $section;
     }
 }
