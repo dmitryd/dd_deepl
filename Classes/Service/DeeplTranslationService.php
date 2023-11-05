@@ -613,8 +613,6 @@ class DeeplTranslationService implements SingletonInterface
     /**
      * Translates a single sheet.
      *
-     * Note: this will break sections currently!
-     *
      * @param string $tableName
      * @param string $fieldName
      * @param string $sheetName
