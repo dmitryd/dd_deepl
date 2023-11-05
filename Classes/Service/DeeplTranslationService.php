@@ -389,7 +389,10 @@ class DeeplTranslationService implements SingletonInterface
     protected function canTranslate(SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): bool
     {
         $canTranslate = true;
-        if (!$this->isSupportedLanguage($sourceLanguage, $this->sourceLanguages)) {
+
+        if ($sourceLanguage->getLocale()->getLanguageCode() === $targetLanguage->getLocale()->getLanguageCode()) {
+            $canTranslate = false;
+        } elseif (!$this->isSupportedLanguage($sourceLanguage, $this->sourceLanguages)) {
             $this->logger->notice(
                 sprintf(
                     'Language "%s" cannot be used as a source language because it is not supported',
