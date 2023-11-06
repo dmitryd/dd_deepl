@@ -47,6 +47,9 @@ Also other extensions do not allow you to modify the translation process (such a
 before and after the translation, or force/prevent translation of the field). This extension provides several events
 that can alter the behavior of translation or modify field values before and after the translation.
 
+Starting from version 12.1.0 the extension can translate flexform fields (including sections), which is a
+very useful feature for custom content elements.
+
 This extension is not in any way based on two above mentioned extensions or contains any of their code. This is
 completely new code.
 
