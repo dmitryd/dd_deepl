@@ -49,25 +49,30 @@ class InjectAdditionalResources
     {
         $request = $GLOBALS['TYPO3_REQUEST'];
         /** @var ServerRequestInterface $request */
-        if (ApplicationType::fromRequest($request)->isBackend() &&
-            GeneralUtility::makeInstance(DeeplTranslationService::class)->isAvailable()
-        ) {
+        if (ApplicationType::fromRequest($request)->isBackend()) {
             $pageTSConfig = BackendUtility::getPagesTSconfig($this->getPageId());
             $module = $request->getAttribute('module');
             /** @var \TYPO3\CMS\Backend\Module\Module $module */
-            if ($module && $module->getIdentifier() === 'web_layout') {
-                // Page module
-                if ($pageTSConfig['mod.']['web_layout.']['localization.']['enableDeepL'] ?? true) {
-                    $pageRenderer->loadJavaScriptModule('@dmitryd/dd_deepl/Localization.js');
-                    $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
-                }
-            } else {
-                // List module
-                if ($pageTSConfig['mod.']['web_list.']['localization.']['enableDeepL'] ?? true) {
-                    // We could limit to "/module/web/list" but than EXT:news administration module will not get translation button, so we just add to all
-                    $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/ListLocalization');
-                    $pageRenderer->addCssFile('EXT:dd_deepl/Resources/Public/Css/DdDeepl.css');
-                    $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
+            if ($module) {
+                $moduleIdentifier = $module->getIdentifier();
+                // Only within web_* and with the navigation component because we need the page id!
+                // See https://github.com/dmitryd/dd_deepl/issues/9
+                if (str_starts_with($moduleIdentifier, 'web_') && $module->getNavigationComponent() && $this->isDeeplAvailable()) {
+                    if ($moduleIdentifier === 'web_layout') {
+                        // Page module
+                        if ($pageTSConfig['mod.']['web_layout.']['localization.']['enableDeepL'] ?? true) {
+                            $pageRenderer->loadJavaScriptModule('@dmitryd/dd_deepl/Localization.js');
+                            $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
+                        }
+                    } else {
+                        // List module
+                        if ($pageTSConfig['mod.']['web_list.']['localization.']['enableDeepL'] ?? true) {
+                            // We could limit to "/module/web/list" but than EXT:news administration module will not get translation button, so we just add to all
+                            $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/ListLocalization');
+                            $pageRenderer->addCssFile('EXT:dd_deepl/Resources/Public/Css/DdDeepl.css');
+                            $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
+                        }
+                    }
                 }
             }
         }
@@ -90,5 +95,16 @@ class InjectAdditionalResources
         }
 
         return (int)$pageId;
+    }
+
+    /**
+     * Checks if DeepL is available. This function must be called only inside web_* modules!
+     *
+     * @return bool
+     * @see https://github.com/dmitryd/dd_deepl/issues/9
+     */
+    protected function isDeeplAvailable(): bool
+    {
+        return GeneralUtility::makeInstance(DeeplTranslationService::class)->isAvailable();
     }
 }
