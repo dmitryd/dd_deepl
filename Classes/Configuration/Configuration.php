@@ -51,11 +51,15 @@ class Configuration
         $ts = $configurationManager->getTypoScriptSetup();
         $ts = $ts['module.']['tx_dddeepl.'] ?? [];
 
-        $contentObject = GeneralUtility::makeInstance(ContentObjectRenderer::class);
-        $this->apiKey = $contentObject->stdWrap(
-            $ts['settings.']['apiKey'] ?? '',
-            $ts['settings.']['apiKey.'] ?? [],
-        );
+        if (!is_array($ts['settings.']['apiKey.'])) {
+            $this->apiKey = $ts['settings.']['apiKey'] ?? '';
+        } else {
+            $contentObject = GeneralUtility::makeInstance(ContentObjectRenderer::class);
+            $this->apiKey = $contentObject->stdWrap(
+                $ts['settings.']['apiKey'] ?? '',
+                $ts['settings.']['apiKey.'],
+            );
+        }
         $this->apiUrl = str_ends_with($this->apiKey, ':fx') ? 'https://api-free.deepl.com' : 'https://api.deepl.com';
         if ($ts['settings.']['maximumNumberOfGlossariesPerLanguage'] ?? false) {
             $this->maximumNumberOfGlossaries = (int)$ts['settings.']['maximumNumberOfGlossariesPerLanguage'];
