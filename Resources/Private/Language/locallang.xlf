@@ -119,6 +119,9 @@
 			<trans-unit id="module.error">
 				<source>There was a problem with DeepL: [%d] %s</source>
 			</trans-unit>
+			<trans-unit id="not_composer">
+				<source>Extension "dd_deepl" only works if TYPO3 is installed with composer. Your installation uses obsolete legacy mode, which is not supported by this extension. Please, uninstall this extension!</source>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>

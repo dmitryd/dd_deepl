@@ -20,6 +20,10 @@
 					informations confidentielles ou sensibles en dehors de votre entreprise.
 				</target>
 			</trans-unit>
+			<trans-unit id="not_composer">
+				<source>Extension "dd_deepl" only works if TYPO3 is installed with composer. Your installation uses obsolete legacy mode, which is not supported by this extension. Please, uninstall this extension!</source>
+				<target>L'extension "dd_deepl" ne fonctionne que si TYPO3 est installé avec composer. Votre installation utilise un mode obsolète, qui n'est pas supporté par cette extension. Veuillez désinstaller cette extension !</target>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>
