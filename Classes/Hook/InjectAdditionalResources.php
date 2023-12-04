@@ -57,7 +57,7 @@ class InjectAdditionalResources
                 $moduleIdentifier = $module->getIdentifier();
                 // Only within web_* and with the navigation component because we need the page id!
                 // See https://github.com/dmitryd/dd_deepl/issues/9
-                if (str_starts_with($moduleIdentifier, 'web_') && $module->getNavigationComponent() && $this->isDeeplAvailable()) {
+                if (str_starts_with($moduleIdentifier, 'web_')) {
                     $isAvailable = $module->getNavigationComponent() && $this->isDeeplAvailable();
                     if ($moduleIdentifier === 'web_layout') {
                         // Page module
