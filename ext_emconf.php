@@ -28,5 +28,5 @@ $EM_CONF[$_EXTKEY] = [
     'author' => 'Dmitry Dulepov',
     'author_email' => 'dmitry.dulepov@gmail.com',
     'author_company' => 'SIA ACCIO',
-    'version' => '12.2.0'
+    'version' => '12.3.0'
 ];
