@@ -43,13 +43,17 @@ use Dmitryd\DdDeepl\Event\CanFieldBeTranslatedCheckEvent;
 use Dmitryd\DdDeepl\Event\PreprocessFieldValueEvent;
 use Psr\Log\LoggerAwareTrait;
 use TYPO3\CMS\Core\Configuration\FlexForm\FlexFormTools;
+use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Localization\Locale;
 use TYPO3\CMS\Core\Log\LogManager;
+use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Site\SiteFinder;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
@@ -84,20 +88,37 @@ class DeeplTranslationService implements SingletonInterface
         $this->configuration = GeneralUtility::makeInstance(Configuration::class);
         $this->eventDispatcher = GeneralUtility::makeInstance(EventDispatcher::class);
 
-        $deeplOptions = array_merge(
-            [
-                TranslatorOptions::SERVER_URL => $this->configuration->getApiUrl(),
-            ],
-            $deeplOptions
-        );
-        $apiKey = $this->configuration->getApiKey();
-        if ($apiKey) {
-            $this->translator = new Translator($apiKey, $deeplOptions);
-            $this->sourceLanguages = $this->translator->getSourceLanguages();
-            $this->targetLanguages = $this->translator->getTargetLanguages();
-        }
-
         $this->setLogger(GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__));
+
+        if (Environment::isComposerMode()) {
+            $deeplOptions = array_merge(
+                [
+                    TranslatorOptions::SERVER_URL => $this->configuration->getApiUrl(),
+                ],
+                $deeplOptions
+            );
+            $apiKey = $this->configuration->getApiKey();
+            if ($apiKey) {
+                $this->translator = new Translator($apiKey, $deeplOptions);
+                $this->sourceLanguages = $this->translator->getSourceLanguages();
+                $this->targetLanguages = $this->translator->getTargetLanguages();
+            }
+        } else {
+            $message = $GLOBALS['LANG']->sL('LLL:EXT:dd_deepl/Resources/Private/Language/locallang.xlf:not_composer');
+
+            $this->logger->critical($message);
+
+            $flashMessage = GeneralUtility::makeInstance(
+                FlashMessage::class,
+                '',
+                $message,
+                ContextualFeedbackSeverity::ERROR,
+                true
+            );
+            $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+            $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
+            $defaultFlashMessageQueue->enqueue($flashMessage);
+        }
     }
 
     /**
