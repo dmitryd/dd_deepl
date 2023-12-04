@@ -52,7 +52,7 @@ class Configuration
         $ts = $configurationManager->getTypoScriptSetup();
         $ts = $ts['module.']['tx_dddeepl.'] ?? [];
 
-        if (!is_array($ts['settings.']['apiKey.'])) {
+        if (!isset($ts['settings.']['apiKey.']) || !is_array($ts['settings.']['apiKey.'])) {
             $this->apiKey = $ts['settings.']['apiKey'] ?? '';
         } else {
             $contentObject = GeneralUtility::makeInstance(ContentObjectRenderer::class);
