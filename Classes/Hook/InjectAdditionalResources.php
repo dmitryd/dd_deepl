@@ -58,15 +58,20 @@ class InjectAdditionalResources
                 // Only within web_* and with the navigation component because we need the page id!
                 // See https://github.com/dmitryd/dd_deepl/issues/9
                 if (str_starts_with($moduleIdentifier, 'web_') && $module->getNavigationComponent() && $this->isDeeplAvailable()) {
+                    $isAvailable = $module->getNavigationComponent() && $this->isDeeplAvailable();
                     if ($moduleIdentifier === 'web_layout') {
                         // Page module
-                        if ($pageTSConfig['mod.']['web_layout.']['localization.']['enableDeepL'] ?? true) {
+                        if ($isAvailable && $pageTSConfig['mod.']['web_layout.']['localization.']['enableDeepL'] ?? true) {
                             $pageRenderer->loadJavaScriptModule('@dmitryd/dd_deepl/Localization.js');
                             $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
+                        } else {
+                            // Load the standard module
+                            // See https://github.com/dmitryd/dd_deepl/issues/8#issuecomment-1807787504
+                            $pageRenderer->loadJavaScriptModule('@typo3/backend/localization.js');
                         }
                     } else {
                         // List module
-                        if ($pageTSConfig['mod.']['web_list.']['localization.']['enableDeepL'] ?? true) {
+                        if ($isAvailable && $pageTSConfig['mod.']['web_list.']['localization.']['enableDeepL'] ?? true) {
                             // We could limit to "/module/web/list" but than EXT:news administration module will not get translation button, so we just add to all
                             $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/ListLocalization');
                             $pageRenderer->addCssFile('EXT:dd_deepl/Resources/Public/Css/DdDeepl.css');
