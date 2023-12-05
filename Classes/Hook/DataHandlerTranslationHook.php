@@ -75,7 +75,7 @@ class DataHandlerTranslationHook
      */
     public function processCmdmap_postProcess(string $command, string $tableName, mixed $recordId, mixed $languageId, DataHandler $dataHandler): void
     {
-        if ($command === 'localize' && $this->isDeeplRequest()) {
+        if ($command === 'localize' && ($this->isDeeplRequest() || ($tableName === 'pages' && $this->isNewPageTranslation()))) {
             $record = BackendUtility::getRecord($tableName, (int)$recordId);
             if (!empty($record)) {
                 $languageField = $GLOBALS['TCA'][$tableName]['ctrl']['languageField'] ?? false;
@@ -99,6 +99,21 @@ class DataHandlerTranslationHook
         $parsedBody = $request->getParsedBody() ?? [];
 
         return ($queryParams['deepl'] ?? false) || ($parsedBody['deepl'] ?? false);
+    }
+
+    /**
+     * Checks if the user is creating a new translation of the page.
+     *
+     * @return bool
+     */
+    protected function isNewPageTranslation(): bool
+    {
+        $request = $GLOBALS['TYPO3_REQUEST'];
+        /** @var \TYPO3\CMS\Core\Http\ServerRequest $request */
+        $route = $request->getAttribute('route');
+        /** @var \TYPO3\CMS\Core\Routing\Route $route */
+
+        return ($route->getPath() === '/record/commit');
     }
 
     /**
