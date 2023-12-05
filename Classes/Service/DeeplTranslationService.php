@@ -385,6 +385,10 @@ class DeeplTranslationService implements SingletonInterface
                 // Not the usual input
                 $result = false;
             }
+            if (isset($tcaConfiguration['config']['softref'])) {
+                // Not the usual input either
+                $result = false;
+            }
             if (isset($tcaConfiguration['config']['valuePicker'])) {
                 // Value picker
                 $result = false;
