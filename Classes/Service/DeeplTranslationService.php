@@ -45,6 +45,7 @@ use Dmitryd\DdDeepl\Event\PreprocessFieldValueEvent;
 use Psr\Log\LoggerAwareTrait;
 use TYPO3\CMS\Core\Configuration\FlexForm\FlexFormTools;
 use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\DataHandling\SlugHelper;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Localization\Locale;
@@ -268,6 +269,7 @@ class DeeplTranslationService implements SingletonInterface
         $wasTranslated = false;
         $sourceLanguage = $this->getRecordSourceLanguage($tableName, $record);
         if ($this->canTranslate($sourceLanguage, $targetLanguage) && isset($GLOBALS['TCA'][$tableName])) {
+            $slugField = null;
             foreach ($record as $fieldName => $fieldValue) {
                 if (isset($GLOBALS['TCA'][$tableName]['columns'][$fieldName]) && !in_array($fieldName, $exceptFieldNames)) {
                     $config = $GLOBALS['TCA'][$tableName]['columns'][$fieldName];
@@ -295,9 +297,25 @@ class DeeplTranslationService implements SingletonInterface
                             );
                         }
                         $wasTranslated = $translatedFields[$fieldName] !== $fieldValue;
+                    }  elseif ($config['config']['type'] === 'slug') {
+                        $slugField = $fieldName;
                     }
                 }
             }
+        }
+
+        if (count($translatedFields) > 0 && $slugField) {
+            $slugHelper = GeneralUtility::makeInstance(
+                SlugHelper::class,
+                $tableName,
+                $slugField,
+                $GLOBALS['TCA'][$tableName]['columns'][$slugField]['config']
+            );
+            /** @var SlugHelper $slugHelper */
+            $translatedFields[$slugField] = $slugHelper->generate(
+                array_merge($record, $translatedFields),
+                $record['pid']
+            );
         }
 
         $event = GeneralUtility::makeInstance(AfterRecordTranslatedEvent::class, $tableName, $record, $targetLanguage, $translatedFields, $wasTranslated);
