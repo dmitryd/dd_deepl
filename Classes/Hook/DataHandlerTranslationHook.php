@@ -147,9 +147,17 @@ class DataHandlerTranslationHook
                             $translation['uid'] => $service->translateRecord($tableName, $record, $targetLanguage),
                         ]
                     ];
+                    $redirectHook = $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass']['redirects'] ?? null;
+                    if ($redirectHook) {
+                        // Prevent redirects from being created for translations
+                        unset($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass']['redirects']);
+                    }
                     $localDataHandler = GeneralUtility::makeInstance(DataHandler::class);
                     $localDataHandler->start($data, [], $dataHandler->BE_USER);
                     $localDataHandler->process_datamap();
+                    if ($redirectHook) {
+                        $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass']['redirects'] = $redirectHook;
+                    }
                 } catch (DeepLException $exception) {
                     $message = sprintf(
                         'Unable to translate record %1$s#%2$d using DeepL. Error: %3$s',
