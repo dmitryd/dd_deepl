@@ -154,6 +154,7 @@ class DataHandlerTranslationHook
                     }
                     $localDataHandler = GeneralUtility::makeInstance(DataHandler::class);
                     $localDataHandler->start($data, [], $dataHandler->BE_USER);
+                    $localDataHandler->dontProcessTransformations = true;
                     $localDataHandler->process_datamap();
                     if ($redirectHook) {
                         $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass']['redirects'] = $redirectHook;
