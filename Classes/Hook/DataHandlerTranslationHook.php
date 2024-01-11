@@ -133,6 +133,7 @@ class DataHandlerTranslationHook
                     ];
                     $localDataHandler = GeneralUtility::makeInstance(DataHandler::class);
                     $localDataHandler->start($data, [], $dataHandler->BE_USER);
+                    $localDataHandler->dontProcessTransformations = true;
                     $localDataHandler->process_datamap();
                 } catch (\Exception $exception) {
                     $message = sprintf(

@@ -30,6 +30,7 @@ use DeepL\GlossaryEntries;
 use DeepL\GlossaryInfo;
 use DeepL\GlossaryLanguagePair;
 use DeepL\LanguageCode;
+use DeepL\TranslateTextOptions;
 use DeepL\Translator;
 use DeepL\TranslatorOptions;
 use DeepL\Usage;
@@ -302,7 +303,11 @@ class DeeplTranslationService implements SingletonInterface
         return empty($text) ? '' : $this->translator->translateText(
             $text,
             $sourceLanguage,
-            $targetLanguage
+            $targetLanguage,
+            [
+                TranslateTextOptions::PRESERVE_FORMATTING => true,
+                TranslateTextOptions::TAG_HANDLING => 'html',
+            ]
         );
     }
 
