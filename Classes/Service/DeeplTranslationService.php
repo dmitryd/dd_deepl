@@ -104,8 +104,21 @@ class DeeplTranslationService implements SingletonInterface
             $apiKey = $this->configuration->getApiKey();
             if ($apiKey) {
                 $this->translator = new Translator($apiKey, $deeplOptions);
-                $this->sourceLanguages = $this->translator->getSourceLanguages();
-                $this->targetLanguages = $this->translator->getTargetLanguages();
+                try {
+                    $this->sourceLanguages = $this->translator->getSourceLanguages();
+                    $this->targetLanguages = $this->translator->getTargetLanguages();
+                } catch (\Exception $exception) {
+                    $this->logger->error(
+                        sprintf(
+                            'Exception %s while fetching DeepL languages. Code %d, message "%s". Stack: %s',
+                            get_class($exception),
+                            $exception->getCode(),
+                            $exception->getMessage(),
+                            $exception->getTraceAsString()
+                        )
+                    );
+                    $this->translator = null;
+                }
             }
         } else {
             $message = $GLOBALS['LANG']->sL('LLL:EXT:dd_deepl/Resources/Private/Language/locallang.xlf:not_composer');
