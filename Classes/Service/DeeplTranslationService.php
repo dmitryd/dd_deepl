@@ -96,14 +96,28 @@ class DeeplTranslationService implements SingletonInterface
             $deeplOptions = array_merge(
                 [
                     TranslatorOptions::SERVER_URL => $this->configuration->getApiUrl(),
+                    TranslatorOptions::TIMEOUT => 10,
                 ],
                 $deeplOptions
             );
             $apiKey = $this->configuration->getApiKey();
             if ($apiKey) {
                 $this->translator = new Translator($apiKey, $deeplOptions);
-                $this->sourceLanguages = $this->translator->getSourceLanguages();
-                $this->targetLanguages = $this->translator->getTargetLanguages();
+                try {
+                    $this->sourceLanguages = $this->translator->getSourceLanguages();
+                    $this->targetLanguages = $this->translator->getTargetLanguages();
+                } catch (\Exception $exception) {
+                    $this->logger->error(
+                        sprintf(
+                            'Exception %s while fetching DeepL languages. Code %d, message "%s". Stack: %s',
+                            get_class($exception),
+                            $exception->getCode(),
+                            $exception->getMessage(),
+                            $exception->getTraceAsString()
+                        )
+                    );
+                    $this->translator = null;
+                }
             }
         } else {
             $message = $GLOBALS['LANG']->sL('LLL:EXT:dd_deepl/Resources/Private/Language/locallang.xlf:not_composer');
@@ -229,7 +243,7 @@ class DeeplTranslationService implements SingletonInterface
         try {
             // Best alternative to a ping function
             $result = $this->translator->getUsage();
-        } catch (DeepLException) {
+        } catch (\Exception) {
             $result = null;
         }
 

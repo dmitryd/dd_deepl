@@ -25,7 +25,6 @@ namespace Dmitryd\DdDeepl\Hook;
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
-use DeepL\DeepLException;
 use Dmitryd\DdDeepl\Service\DeeplTranslationService;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
@@ -159,7 +158,7 @@ class DataHandlerTranslationHook
                     if ($redirectHook) {
                         $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass']['redirects'] = $redirectHook;
                     }
-                } catch (DeepLException $exception) {
+                } catch (\Exception $exception) {
                     $message = sprintf(
                         'Unable to translate record %1$s#%2$d using DeepL. Error: %3$s',
                         $tableName,
