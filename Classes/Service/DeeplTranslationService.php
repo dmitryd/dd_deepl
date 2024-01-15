@@ -75,6 +75,7 @@ class DeeplTranslationService implements SingletonInterface
         $deeplOptions = array_merge(
             [
                 TranslatorOptions::SERVER_URL => $this->configuration->getApiUrl(),
+                TranslatorOptions::TIMEOUT => 10,
             ],
             $deeplOptions
         );
@@ -190,7 +191,7 @@ class DeeplTranslationService implements SingletonInterface
         try {
             // Best alternative to a ping function
             $result = $this->translator->getUsage();
-        } catch (DeepLException) {
+        } catch (\Exception) {
             $result = null;
         }
 
