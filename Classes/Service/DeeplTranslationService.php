@@ -29,9 +29,9 @@ use DeepL\DeepLException;
 use DeepL\GlossaryEntries;
 use DeepL\GlossaryInfo;
 use DeepL\GlossaryLanguagePair;
+use DeepL\Language;
 use DeepL\LanguageCode;
 use DeepL\TranslateTextOptions;
-use DeepL\Language;
 use DeepL\Translator;
 use DeepL\TranslatorOptions;
 use DeepL\Usage;
@@ -297,7 +297,7 @@ class DeeplTranslationService implements SingletonInterface
                             );
                         }
                         $wasTranslated = $translatedFields[$fieldName] !== $fieldValue;
-                    }  elseif ($config['config']['type'] === 'slug') {
+                    } elseif ($config['config']['type'] === 'slug') {
                         $slugField = $fieldName;
                     }
                 }
@@ -588,7 +588,7 @@ class DeeplTranslationService implements SingletonInterface
     protected function isSupportedLanguage(SiteLanguage $siteLanguage, array $languages): bool
     {
         $languageCode = $siteLanguage->getTwoLetterIsoCode();
-        $matchingLanguages = array_filter($languages, function (Language $language) use ($languageCode) : bool {
+        $matchingLanguages = array_filter($languages, function (Language $language) use ($languageCode): bool {
             [$testCode] = explode('-', $language->code);
             return strcasecmp($languageCode, $testCode) === 0;
         });
