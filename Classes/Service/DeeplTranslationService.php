@@ -29,6 +29,7 @@ use DeepL\DeepLException;
 use DeepL\GlossaryEntries;
 use DeepL\GlossaryInfo;
 use DeepL\GlossaryLanguagePair;
+use DeepL\LanguageCode;
 use DeepL\Translator;
 use DeepL\TranslatorOptions;
 use DeepL\Usage;
@@ -41,6 +42,7 @@ use Dmitryd\DdDeepl\Event\CanFieldBeTranslatedCheckEvent;
 use Dmitryd\DdDeepl\Event\PreprocessFieldValueEvent;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
+use TYPO3\CMS\Core\Localization\Locale;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Site\SiteFinder;
@@ -272,8 +274,8 @@ class DeeplTranslationService implements SingletonInterface
 
         $fieldValue = $this->translateText(
             $fieldValue,
-            $this->updateLanguageCode($sourceLanguage->getTwoLetterIsoCode()),
-            $this->updateLanguageCode($targetLanguage->getTwoLetterIsoCode())
+            $sourceLanguage->getTwoLetterIsoCode(),
+            $this->getTargetLanguageCodeFromLocale(GeneralUtility::makeInstance(Locale::class, $targetLanguage->getLocale()))
         );
 
         $event = GeneralUtility::makeInstance(AfterFieldTranslatedEvent::class, $tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
@@ -381,6 +383,41 @@ class DeeplTranslationService implements SingletonInterface
     }
 
     /**
+     * DeepL deprecated some language codes. We need to fix those to be compatible.
+     * Currently only target language codes 'en' and 'pt' are deprecated. They
+     * must include country part. DeepL does not yet have a proper API for this.
+     *
+     * @param Locale $locale
+     * @return string
+     */
+    protected function getTargetLanguageCodeFromLocale(Locale $locale): string
+    {
+        static $replacements = [
+            LanguageCode::ENGLISH => [
+                LanguageCode::ENGLISH_AMERICAN,
+                LanguageCode::ENGLISH_BRITISH,
+            ],
+            LanguageCode::PORTUGUESE => [
+                LanguageCode::PORTUGUESE_EUROPEAN,
+                LanguageCode::PORTUGUESE_BRAZILIAN,
+            ],
+        ];
+        $result = $languageCode = $locale->getLanguageCode();
+        if ($replacements[$languageCode] ?? false) {
+            $result = LanguageCode::standardizeLanguageCode(
+                str_replace('_', '-', $locale->getName())
+            );
+            // Check if supported by DeepL
+            if (!in_array($result, $replacements[$languageCode])) {
+                // Fallback to the default
+                $result = $replacements[$languageCode][0];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Preprocesses the field depending on its value.
      *
      * @param string $tableName
@@ -401,24 +438,5 @@ class DeeplTranslationService implements SingletonInterface
         $fieldValue = $event->getFieldValue();
 
         return $fieldValue;
-    }
-
-    /**
-     * Deepl needs some languages codes to be different from TYPO3 ones. This method updates such codes.
-     *
-     * @param string $languageCode
-     * @return string
-     */
-    protected function updateLanguageCode(string $languageCode): string
-    {
-        switch ($languageCode) {
-            case 'en':
-                $languageCode = 'en-US';
-                break;
-            case 'pt':
-                $languageCode = 'pt-PT';
-                break;
-        }
-        return $languageCode;
     }
 }
