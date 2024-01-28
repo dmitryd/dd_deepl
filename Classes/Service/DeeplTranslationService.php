@@ -354,7 +354,14 @@ class DeeplTranslationService implements SingletonInterface
     public function translateField(string $tableName, string $fieldName, string $fieldValue, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): string
     {
         if ($this->canTranslate($sourceLanguage, $targetLanguage)) {
-            $fieldValue = $this->translateFieldInternal($tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
+            $fieldValue = $this->translateFieldInternal(
+                $tableName,
+                $fieldName,
+                $fieldValue,
+                $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config'],
+                $sourceLanguage,
+                $targetLanguage
+            );
         }
 
         return $fieldValue;
