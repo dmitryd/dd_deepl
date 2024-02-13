@@ -436,6 +436,9 @@ class DeeplTranslationService implements SingletonInterface
             if (isset($tcaConfiguration['config']['renderType']) && $tcaConfiguration['config']['renderType'] !== 'default') {
                 // Anything that is not default is not translatable
                 $result = false;
+            } elseif (isset($tcaConfiguration['config']['enableRichtext']) && $tcaConfiguration['config']['enableRichtext'] && empty(trim(strip_tags(str_ireplace('&nbsp;', ' ', $fieldValue))))) {
+                // "<p> </p>", "<br/>" or similar
+                $result = false;
             }
         } elseif ($tcaConfiguration['config']['type'] === 'flex') {
             $result = true;
