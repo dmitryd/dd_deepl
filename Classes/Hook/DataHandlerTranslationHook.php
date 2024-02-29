@@ -113,7 +113,7 @@ class DataHandlerTranslationHook
         $route = $request->getAttribute('route');
         /** @var \TYPO3\CMS\Core\Routing\Route $route */
 
-        return ($route->getPath() === '/record/commit');
+        return $route->getPath() === '/record/commit';
     }
 
     /**

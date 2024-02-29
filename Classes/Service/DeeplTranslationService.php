@@ -311,7 +311,7 @@ class DeeplTranslationService implements SingletonInterface
                             );
                         }
                         $wasTranslated = $translatedFields[$fieldName] !== $fieldValue;
-                    }  elseif ($config['config']['type'] === 'slug') {
+                    } elseif ($config['config']['type'] === 'slug') {
                         $slugField = $fieldName;
                     }
                 }
