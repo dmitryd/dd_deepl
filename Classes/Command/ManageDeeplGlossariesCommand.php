@@ -56,7 +56,7 @@ class ManageDeeplGlossariesCommand extends Command
     protected OutputInterface $output;
 
     /** @inheritDoc */
-    protected function configure()
+    protected function configure(): void
     {
         $this->setDescription('Manage DeepL glossaries');
 
@@ -85,7 +85,7 @@ class ManageDeeplGlossariesCommand extends Command
     }
 
     /** @inheritDoc */
-    public function execute(InputInterface $input, OutputInterface $output)
+    public function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->input = $input;
         $this->output = $output;
