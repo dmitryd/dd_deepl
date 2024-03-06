@@ -31,6 +31,7 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Site\SiteFinder;
+use TYPO3\CMS\Core\Utility\ArrayUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
@@ -62,25 +63,50 @@ class DataHandlerTranslationHook
     }
 
     /**
-     * Processes our custom command and translates the record. Translations
-     * have to happen in the post-process hook because of EXT:container,
-     * who does certain changes to the pre-process hooks and we cannot guarantee
-     * that their changhes will happen before ours. Thus we use a post-processing hook.
+     * Translated records via DeepL.
      *
-     * @param string $command
+     * @param string $status
      * @param string $tableName
-     * @param int $recordId
-     * @param int $languageId
+     * @param $recordId
+     * @param array $fieldArray
      * @param \TYPO3\CMS\Core\DataHandling\DataHandler $dataHandler
      */
-    public function processCmdmap_postProcess(string $command, string $tableName, mixed $recordId, mixed $languageId, DataHandler $dataHandler): void
+    public function processDatamap_postProcessFieldArray(string $status, string $tableName, $recordId, array &$fieldArray, DataHandler $dataHandler): void
     {
-        if ($command === 'localize' && ($this->isDeeplRequest() || ($tableName === 'pages' && $this->isNewPageTranslation()))) {
-            $record = BackendUtility::getRecord($tableName, (int)$recordId);
-            if (!empty($record)) {
-                $languageField = $GLOBALS['TCA'][$tableName]['ctrl']['languageField'] ?? false;
-                if ($languageField) {
-                    $this->translateLocalizedRecordFields($tableName, $record, $languageId, $dataHandler);
+        if ($this->isDeeplRequest() || ($tableName === 'pages' && $this->isNewPageTranslation())) {
+            $languageField = $GLOBALS['TCA'][$tableName]['ctrl']['languageField'] ?? false;
+            if ($languageField) {
+                $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+                if ($service->isAvailable()) {
+                    try {
+                        $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($fieldArray['pid']);
+                        $targetLanguage = $site->getLanguageById($fieldArray[$languageField]);
+                        $translationSourceField = $GLOBALS['TCA'][$tableName]['ctrl']['transOrigPointerField'];
+                        $sourceRecord = BackendUtility::getRecord($tableName, $fieldArray[$translationSourceField]);
+                        $translatedFieldArray = $service->translateRecord($tableName, $sourceRecord, $targetLanguage);
+                        ArrayUtility::mergeRecursiveWithOverrule($fieldArray, $translatedFieldArray);
+                    } catch (SiteNotFoundException) {
+                        // Nothing to do, record is outside of sites
+                    } catch (\InvalidArgumentException) {
+                        // Nothing to do - language does not exist on the site but the record has it
+                    } catch (\Exception $exception) {
+                        $message = sprintf(
+                            'Unable to translate record %1$s#%2$s using DeepL. Error: %3$s',
+                            $tableName,
+                            $recordId,
+                            $exception->getMessage()
+                        );
+                        $dataHandler->log($tableName, $recordId, 2, 0, 1, $message);
+                        $this->logger->error(
+                            sprintf(
+                                'Unable to translate %s#%s. Message: \'%s\'. Stack: %s',
+                                $tableName,
+                                $recordId,
+                                $exception->getMessage(),
+                                $exception->getTraceAsString()
+                            )
+                        );
+                    }
                 }
             }
         }
@@ -114,69 +140,5 @@ class DataHandlerTranslationHook
         /** @var \TYPO3\CMS\Core\Routing\Route $route */
 
         return $route->getPath() === '/record/commit';
-    }
-
-    /**
-     * Translates fields of the record localized by TYPO3.
-     *
-     * @param string $tableName
-     * @param array $record
-     * @param mixed $languageId
-     * @param \TYPO3\CMS\Core\DataHandling\DataHandler $dataHandler
-     */
-    protected function translateLocalizedRecordFields(string $tableName, array $record, mixed $languageId, DataHandler $dataHandler): void
-    {
-        $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
-        if ($service->isAvailable()) {
-            list($translation) = BackendUtility::getRecordLocalization($tableName, $record['uid'], $languageId);
-            if ($translation) {
-                try {
-                    $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($record['pid']);
-                    $targetLanguage = $site->getLanguageById($languageId);
-                } catch (SiteNotFoundException) {
-                    // Nothing to do, record is outside of sites
-                    return;
-                } catch (\InvalidArgumentException) {
-                    // Nothing to do - language does not exist on the site but the record has it
-                    return;
-                }
-                try {
-                    $data = [
-                        $tableName => [
-                            $translation['uid'] => $service->translateRecord($tableName, $record, $targetLanguage),
-                        ]
-                    ];
-                    $redirectHook = $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass']['redirects'] ?? null;
-                    if ($redirectHook) {
-                        // Prevent redirects from being created for translations
-                        unset($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass']['redirects']);
-                    }
-                    $localDataHandler = GeneralUtility::makeInstance(DataHandler::class);
-                    $localDataHandler->start($data, [], $dataHandler->BE_USER);
-                    $localDataHandler->dontProcessTransformations = true;
-                    $localDataHandler->process_datamap();
-                    if ($redirectHook) {
-                        $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass']['redirects'] = $redirectHook;
-                    }
-                } catch (\Exception $exception) {
-                    $message = sprintf(
-                        'Unable to translate record %1$s#%2$d using DeepL. Error: %3$s',
-                        $tableName,
-                        $record['uid'],
-                        $exception->getMessage()
-                    );
-                    $dataHandler->log($tableName, $record['uid'], 2, 0, 1, $message);
-                    $this->logger->error(
-                        sprintf(
-                            'Unable to translate %s#%d. Message: \'%s\'. Stack: %s',
-                            $tableName,
-                            $record['uid'],
-                            $exception->getMessage(),
-                            $exception->getTraceAsString()
-                        )
-                    );
-                }
-            }
-        }
     }
 }
