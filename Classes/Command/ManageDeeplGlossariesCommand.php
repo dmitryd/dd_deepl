@@ -189,7 +189,7 @@ class ManageDeeplGlossariesCommand extends Command
         $result = true;
 
         foreach ($options as $option) {
-            if (!$this->input->hasOption($option)) {
+            if (empty($this->input->getOption($option))) {
                 $this->output->writeln('Error: option "--' . $option . '" is required.');
                 $result = false;
             }
