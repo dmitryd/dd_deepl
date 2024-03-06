@@ -73,7 +73,7 @@ class DataHandlerTranslationHook
      */
     public function processDatamap_postProcessFieldArray(string $status, string $tableName, $recordId, array &$fieldArray, DataHandler $dataHandler): void
     {
-        if ($this->isDeeplRequest() || ($tableName === 'pages' && $this->isNewPageTranslation())) {
+        if (($fieldArray['pid'] ?? false) && ($this->isDeeplRequest() || $this->isNewPageTranslation($tableName, $recordId, $fieldArray))) {
             $languageField = $GLOBALS['TCA'][$tableName]['ctrl']['languageField'] ?? false;
             if ($languageField) {
                 $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
@@ -130,15 +130,16 @@ class DataHandlerTranslationHook
     /**
      * Checks if the user is creating a new translation of the page.
      *
+     * @param string $tableName
+     * @param mixed $recordId
+     * @param array $fieldArray
      * @return bool
      */
-    protected function isNewPageTranslation(): bool
+    protected function isNewPageTranslation(string $tableName, $recordId, array $fieldArray): bool
     {
-        $request = $GLOBALS['TYPO3_REQUEST'];
-        /** @var \TYPO3\CMS\Core\Http\ServerRequest $request */
-        $route = $request->getAttribute('route');
-        /** @var \TYPO3\CMS\Core\Routing\Route $route */
-
-        return $route->getPath() === '/record/commit';
+        return $tableName === 'pages' &&
+            ($fieldArray['sys_language_uid'] ?? 0) > 0 &&
+            str_starts_with((string)$recordId, 'NEW')
+        ;
     }
 }
