@@ -97,6 +97,7 @@ class DeeplTranslationService implements SingletonInterface
                 [
                     TranslatorOptions::PROXY => $GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy'] ?? '',
                     TranslatorOptions::SERVER_URL => $this->configuration->getApiUrl(),
+                    TranslatorOptions::TIMEOUT => 10,
                 ],
                 $deeplOptions
             );
