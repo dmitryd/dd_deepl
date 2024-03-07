@@ -95,6 +95,7 @@ class DeeplTranslationService implements SingletonInterface
         if (Environment::isComposerMode()) {
             $deeplOptions = array_merge(
                 [
+                    TranslatorOptions::PROXY => $GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy'] ?? '',
                     TranslatorOptions::SERVER_URL => $this->configuration->getApiUrl(),
                     TranslatorOptions::TIMEOUT => 10,
                 ],
