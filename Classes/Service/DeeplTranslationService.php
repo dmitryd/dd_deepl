@@ -95,7 +95,7 @@ class DeeplTranslationService implements SingletonInterface
         if (Environment::isComposerMode()) {
             $deeplOptions = array_merge(
                 [
-                    TranslatorOptions::PROXY => $GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy'] ?? '',
+                    TranslatorOptions::PROXY => $this->getProxySettings(),
                     TranslatorOptions::SERVER_URL => $this->configuration->getApiUrl(),
                     TranslatorOptions::TIMEOUT => 10,
                 ],
@@ -528,6 +528,41 @@ class DeeplTranslationService implements SingletonInterface
         }
 
         return $dataStructureArray;
+    }
+
+    /**
+     * Fetches proxy settings for the connection. This covers both simple and advanced
+     * proxy settings.
+     *
+     * @return string
+     * @see https://docs.typo3.org/m/typo3/reference-coreapi/12.4/en-us/Configuration/Typo3ConfVars/HTTP.html?highlight=proxy#proxy
+     * @see https://docs.guzzlephp.org/en/latest/request-options.html#proxy
+     */
+    protected function getProxySettings(): string
+    {
+        $result = '';
+
+        if (!empty($GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy'])) {
+            if (is_string($GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy'])) {
+                $result = $GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy'];
+            } elseif (is_array($GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy'])) {
+                $result = $GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy']['https'] ?? null;
+                if (is_null($result)) {
+                    $result = $GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy']['http'] ?? '';
+                }
+                if (is_array($GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy']['no'])) {
+                    $apiHost = parse_url($this->configuration->getApiUrl(), PHP_URL_HOST);
+                    foreach ($GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy']['no'] as $entry) {
+                        if (str_ends_with($apiHost, $entry)) {
+                            $result = '';
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**
