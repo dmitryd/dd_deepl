@@ -408,8 +408,8 @@ class DeeplTranslationService implements SingletonInterface
             $result = false;
         } elseif (($tcaConfiguration['l10n_mode'] ?? '') === 'exclude') {
             $result = false;
-        } elseif ($tcaConfiguration['translateWithDeepl'] ?? false) {
-            $result = true;
+        } elseif (isset($tcaConfiguration['translateWithDeepl'])) {
+            $result = (bool)$tcaConfiguration['translateWithDeepl'];
         } elseif ($tcaConfiguration['config']['type'] === 'input') {
             $result = true;
             if (isset($tcaConfiguration['renderType']) && $tcaConfiguration['renderType'] !== 'default') {
