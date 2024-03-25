@@ -138,7 +138,7 @@
 				<source>Upload a new glossary</source>
 			</trans-unit>
 			<trans-unit id="module.upload.message.deepl_error">
-				<source>DeepL returned an error: [%d] %s</source>
+				<source>This file was not accepted by DeepL. Please, check that your glossary is correct, it contains only pairs on each line and it does not have duplicate entries. DeepL returned the following error information: [%d] %s</source>
 			</trans-unit>
 			<trans-unit id="module.upload.message.no_file">
 				<source>The file was not uploaded</source>
