@@ -445,7 +445,7 @@ class DeeplTranslationService implements SingletonInterface
             $result = true;
         }
 
-        $event = GeneralUtility::makeInstance(CanFieldBeTranslatedCheckEvent::class, $tableName, $fieldName, $result);
+        $event = GeneralUtility::makeInstance(CanFieldBeTranslatedCheckEvent::class, $tableName, $fieldName, $fieldValue, $result);
         $this->eventDispatcher->dispatch($event);
         $result = $event->getCanBeTranslated();
 
