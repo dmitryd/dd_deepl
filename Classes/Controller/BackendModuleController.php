@@ -273,7 +273,7 @@ class BackendModuleController extends ActionController
                 $message = 'uploaded';
             } catch (DeepLException $exception) {
                 $message = 'deepl_error';
-                $arguments[] = [
+                $arguments = [
                     $exception->getCode(),
                     $exception->getMessage(),
                 ];
