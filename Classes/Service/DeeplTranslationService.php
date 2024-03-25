@@ -412,7 +412,7 @@ class DeeplTranslationService implements SingletonInterface
             $result = true;
         } elseif ($tcaConfiguration['config']['type'] === 'input') {
             $result = true;
-            if (isset($tcaConfiguration['renderType']) && $tcaConfiguration['renderType'] !== 'default') {
+            if (isset($tcaConfiguration['config']['renderType']) && $tcaConfiguration['config']['renderType'] !== 'default') {
                 // Not the usual input
                 $result = false;
             }
