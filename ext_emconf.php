@@ -27,6 +27,6 @@ $EM_CONF[$_EXTKEY] = [
     'clearcacheonload' => 1,
     'author' => 'Dmitry Dulepov',
     'author_email' => 'dmitry.dulepov@gmail.com',
-    'author_company' => 'SIA ACCIO',
+    'author_company' => '',
     'version' => '11.5.0'
 ];
