@@ -45,7 +45,7 @@ class CanFieldBeTranslatedCheckEvent
      * @param string $fieldName
      * @param bool|null $canBeTranslated
      */
-    public function __construct(protected string $tableName, protected string $fieldName, protected ?bool $canBeTranslated)
+    public function __construct(protected string $tableName, protected string $fieldName, protected string $fieldValue, protected ?bool $canBeTranslated)
     {
     }
 
@@ -67,6 +67,16 @@ class CanFieldBeTranslatedCheckEvent
     public function getFieldName(): string
     {
         return $this->fieldName;
+    }
+
+    /**
+     * Fetches the field value.
+     *
+     * @return string
+     */
+    public function getFieldValue(): string
+    {
+        return $this->fieldValue;
     }
 
     /**
