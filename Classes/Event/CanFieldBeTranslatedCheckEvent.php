@@ -45,7 +45,7 @@ class CanFieldBeTranslatedCheckEvent
      * @param string $fieldName
      * @param bool|null $canBeTranslated
      */
-    public function __construct(protected string $tableName, protected string $fieldName, protected string $fieldValue, protected ?bool $canBeTranslated)
+    public function __construct(protected string $tableName, protected string $fieldName, protected ?string $fieldValue, protected ?bool $canBeTranslated)
     {
     }
 
