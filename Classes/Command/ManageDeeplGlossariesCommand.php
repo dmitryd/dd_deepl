@@ -60,6 +60,7 @@ class ManageDeeplGlossariesCommand extends Command
     {
         $this->setDescription('Manage DeepL glossaries');
 
+        $this->setName('Manage DeepL glossaries');
         $this->addUsage(
             'This command manages DeepL glossaries.' . LF .
             LF .
