@@ -97,7 +97,7 @@ class ManageDeeplGlossariesCommand extends Command
         $this->deeplTranslationService = GeneralUtility::makeInstance(DeeplTranslationService::class);
 
         if (!$this->configuration->isConfigured()) {
-            $this->output->writeln('DeepL is not confiured for this site');
+            $this->output->writeln('DeepL is not configured for this site');
             $result = 1;
         } else {
             $action = $input->getArgument('action');
