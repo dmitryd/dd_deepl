@@ -44,6 +44,8 @@ The extension allows you to specify the limit on the amount of glossaries per la
 it is good to have that number under control. Refer to the :ref:`TypoScript configuration <__configuration-typoscript>` reference for more
 information
 
+.. _how-to-manage-glossaries:
+
 How to manage glossaries
 ========================
 

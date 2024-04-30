@@ -40,6 +40,9 @@ class Configuration
 
     protected string $apiKey = '';
 
+    /** @var string[] */
+    protected array $glossaries = [];
+
     protected int $maximumNumberOfGlossaries = 2;
 
     /**
@@ -64,6 +67,8 @@ class Configuration
         if ($ts['settings.']['maximumNumberOfGlossariesPerLanguage'] ?? false) {
             $this->maximumNumberOfGlossaries = (int)$ts['settings.']['maximumNumberOfGlossariesPerLanguage'];
         }
+
+        $this->glossaries = $ts['settings.']['glossaries.'] ?? [];
     }
 
     /**
@@ -84,6 +89,20 @@ class Configuration
     public function getApiKey(): string
     {
         return $this->apiKey;
+    }
+
+    /**
+     * Fetches the glossary for language pairs.
+     *
+     * @param string $sourceLangage
+     * @param string $targetLangage
+     * @return ?string
+     */
+    public function getGlossaryForLanguagePair(string $sourceLangage, string $targetLangage): ?string
+    {
+        $key = $sourceLangage . '-' . $targetLangage;
+
+        return $this->glossaries[$key] ?? null;
     }
 
     /**
