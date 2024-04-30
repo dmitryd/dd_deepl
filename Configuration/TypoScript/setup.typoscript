@@ -6,6 +6,11 @@ module.tx_dddeepl {
       override.data = getenv:TYPO3_DEEPL_API_KEY
     }
 
+    glossaries {
+      # Configure glossaries like below
+      #de-en = 1a7170f3-edab-4c66-949a-4db3dc6a233f
+    }
+
     maximumNumberOfGlossariesPerLanguage = {$module.tx_dddeepl.settings.maximumNumberOfGlossariesPerLanguage}
   }
 }

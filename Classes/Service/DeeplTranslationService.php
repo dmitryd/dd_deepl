@@ -382,14 +382,22 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function translateText(string $text, string $sourceLanguage, string $targetLanguage): string
     {
+        $options = [
+            TranslateTextOptions::PRESERVE_FORMATTING => true,
+            TranslateTextOptions::TAG_HANDLING => 'html',
+        ];
+        [$sourceLanguageForGlossary] = explode('-', $sourceLanguage);
+        [$targetLanguageForGlossary] = explode('-', $targetLanguage);
+        $glossary = $this->configuration->getGlossaryForLanguagePair($sourceLanguageForGlossary, $targetLanguageForGlossary);
+        if ($glossary) {
+            $options[TranslateTextOptions::GLOSSARY] = $glossary;
+        }
+
         return empty($text) ? '' : $this->translator->translateText(
             $text,
             $sourceLanguage,
             $targetLanguage,
-            [
-                TranslateTextOptions::PRESERVE_FORMATTING => true,
-                TranslateTextOptions::TAG_HANDLING => 'html',
-            ]
+            $options
         );
     }
 
