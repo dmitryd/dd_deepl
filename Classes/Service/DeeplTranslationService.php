@@ -412,12 +412,19 @@ class DeeplTranslationService implements SingletonInterface
     {
         $result = null;
 
+        // If translateWithDeepl is set, then:
+        // - if it is false, the field is never translated
+        // - if it is true, other checks are evaluated
+        if (isset($tcaConfiguration['translateWithDeepl'])) {
+            if (!($result = (bool)$tcaConfiguration['translateWithDeepl'])) {
+                return false;
+            }
+        }
+
         if (empty($fieldValue)) {
             $result = false;
         } elseif (($tcaConfiguration['l10n_mode'] ?? '') === 'exclude') {
             $result = false;
-        } elseif ($tcaConfiguration['translateWithDeepl'] ?? false) {
-            $result = true;
         } elseif ($tcaConfiguration['config']['type'] === 'input') {
             $result = true;
             if (isset($tcaConfiguration['renderType']) && $tcaConfiguration['renderType'] !== 'default') {
