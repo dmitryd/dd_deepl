@@ -60,7 +60,7 @@ class InjectAdditionalResources
                     $pageRenderer->loadRequireJsModule('TYPO3/CMS/DdDeepl/Localization');
                     $pageRenderer->addInlineLanguageLabelFile('EXT:dd_deepl/Resources/Private/Language/locallang.xlf', 'TYPO3.lang.', 'TYPO3.lang.');
                 }
-            } elseif (in_array($routeIdentifier, ['web_list', 'web_NewsAdministration'])) {
+            } elseif (in_array($routeIdentifier, ['web_list', 'web_NewsAdministration', 'web_NewsAdministrationAdministration'])) {
                 // List & news modules
                 if ($pageTSConfig['mod.']['web_list.']['localization.']['enableDeepL'] ?? true) {
                     // We could limit to "/module/web/list" but than EXT:news administration module will not get translation button, so we just add to all
