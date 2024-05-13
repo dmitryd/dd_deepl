@@ -8,7 +8,7 @@
 		"typo3/cms-backend": "*",
 		"deeplcom/deepl-php": "^1.5",
 		"phplucidframe/console-table": "^1.2",
-		"symfony/console": "^7"
+		"symfony/console": "^6.4 || ^7.0"
 	},
 	"conflicts": {
 		"deepltranslate": "*",
