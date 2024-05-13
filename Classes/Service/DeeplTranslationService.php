@@ -415,13 +415,10 @@ class DeeplTranslationService implements SingletonInterface
         // If translateWithDeepl is set, then:
         // - if it is false, the field is never translated
         // - if it is true, other checks are evaluated
-        if (isset($tcaConfiguration['translateWithDeepl'])) {
-            if (!($result = (bool)$tcaConfiguration['translateWithDeepl'])) {
-                return false;
-            }
-        }
-
-        if (empty($fieldValue)) {
+        // Hook can still override the result.
+        if (isset($tcaConfiguration['translateWithDeepl']) && !(bool)$tcaConfiguration['translateWithDeepl']) {
+            $result = false;
+        } elseif (empty($fieldValue)) {
             $result = false;
         } elseif (($tcaConfiguration['l10n_mode'] ?? '') === 'exclude') {
             $result = false;
