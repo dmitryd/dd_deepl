@@ -67,6 +67,8 @@ class DeeplTranslationService implements SingletonInterface
 {
     use LoggerAwareTrait;
 
+    protected array $availableGlossaries = [];
+
     protected Configuration $configuration;
 
     protected EventDispatcher $eventDispatcher;
@@ -107,6 +109,9 @@ class DeeplTranslationService implements SingletonInterface
                 try {
                     $this->sourceLanguages = $this->translator->getSourceLanguages();
                     $this->targetLanguages = $this->translator->getTargetLanguages();
+                    foreach ($this->listGlossaries() as $info) {
+                        $this->availableGlossaries[] = $info->glossaryId;
+                    }
                 } catch (\Exception $exception) {
                     $this->logger->error(
                         sprintf(
@@ -390,7 +395,16 @@ class DeeplTranslationService implements SingletonInterface
         [$targetLanguageForGlossary] = explode('-', $targetLanguage);
         $glossary = $this->configuration->getGlossaryForLanguagePair($sourceLanguageForGlossary, $targetLanguageForGlossary);
         if ($glossary) {
-            $options[TranslateTextOptions::GLOSSARY] = $glossary;
+            if (in_array($glossary, $this->availableGlossaries)) {
+                $options[TranslateTextOptions::GLOSSARY] = $glossary;
+            } else {
+                $this->logger->notice(
+                    sprintf(
+                        'Glossary with id=%s is configured but does not exist and therefore ignored.',
+                        $glossary
+                    )
+                );
+            }
         }
 
         return empty($text) ? '' : $this->translator->translateText(
