@@ -106,6 +106,14 @@ class Configuration
     }
 
     /**
+     * Fetches amount of glossaries.
+     */
+    public function getCountGlossaries(): int
+    {
+        return count($this->glossaries);
+    }
+
+    /**
      * Fetches maximum number of glossaries per language pair.
      *
      * @return int

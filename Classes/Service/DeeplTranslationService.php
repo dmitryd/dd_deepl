@@ -386,6 +386,18 @@ class DeeplTranslationService implements SingletonInterface
             TranslateTextOptions::PRESERVE_FORMATTING => true,
             TranslateTextOptions::TAG_HANDLING => 'html',
         ];
+        
+        // only necessary for autodetect with potential glossary,
+        // otherwise passing null below is sufficient
+        if ($this->autoDetectSourceLang && $this->configuration->getCountGlossaries() > 0) {
+            $sourceLanguage = $this->translator->translateText(
+                $text,
+                null,
+                $targetLanguage,
+                $options
+            )->detectedSourceLang;
+        }
+
         [$sourceLanguageForGlossary] = explode('-', $sourceLanguage);
         [$targetLanguageForGlossary] = explode('-', $targetLanguage);
         $glossary = $this->configuration->getGlossaryForLanguagePair($sourceLanguageForGlossary, $targetLanguageForGlossary);
@@ -395,7 +407,7 @@ class DeeplTranslationService implements SingletonInterface
 
         return empty($text) ? '' : $this->translator->translateText(
             $text,
-            $this->autoDetectSourceLang ? null : $sourceLanguage,
+            ($this->autoDetectSourceLang && !$sourceLanguage) ? null : $sourceLanguage,
             $targetLanguage,
             $options
         );
