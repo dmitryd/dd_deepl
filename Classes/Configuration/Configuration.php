@@ -108,9 +108,9 @@ class Configuration
     /**
      * Fetches amount of glossaries.
      */
-    public function getCountGlossaries(): int
+    public function getCountGlossaries(Translator $translator): int
     {
-        return count($this->glossaries);
+        return count($translator->listGlossaries());
     }
 
     /**

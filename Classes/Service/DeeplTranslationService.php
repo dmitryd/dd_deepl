@@ -389,7 +389,7 @@ class DeeplTranslationService implements SingletonInterface
         
         // only necessary for autodetect with potential glossary,
         // otherwise passing null below is sufficient
-        if ($this->autoDetectSourceLang && $this->configuration->getCountGlossaries() > 0) {
+        if ($this->autoDetectSourceLang && $this->configuration->getCountGlossaries($this->translator) > 0) {
             $sourceLanguage = $this->translator->translateText(
                 $text,
                 null,
