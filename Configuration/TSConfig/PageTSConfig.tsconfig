@@ -1,4 +1,0 @@
-mod.web_layout.localization.enableDeepL = 1
-mod.web_list.localization.enableDeepL = 1
-
-templates.typo3/cms-backend.1699799468 = dmitryd/dd-deepl:Resources/Private/Overrides/cms-backend

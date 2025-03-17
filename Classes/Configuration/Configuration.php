@@ -48,10 +48,9 @@ class Configuration
     /**
      * Creates the instance of the class.
      */
-    public function __construct()
+    public function __construct(BackendConfigurationManager $configurationManager)
     {
-        $configurationManager = GeneralUtility::makeInstance(BackendConfigurationManager::class);
-        $ts = $configurationManager->getTypoScriptSetup();
+        $ts = $configurationManager->getTypoScriptSetup($GLOBALS['TYPO3_REQUEST']);
         $ts = $ts['module.']['tx_dddeepl.'] ?? [];
 
         if (!isset($ts['settings.']['apiKey.']) || !is_array($ts['settings.']['apiKey.'])) {

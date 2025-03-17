@@ -3,8 +3,8 @@
 	<file source-language="en" target-language="de" datatype="plaintext" original="messages" product-name="ext-dd_deepl">
 		<body>
 			<trans-unit id="TYPO3.lang.localize.wizard.button.deepl">
-				<source>Translate with DeepL</source>
-				<target>Übersetzen mit DeepL</target>
+				<source>DeepL Translate</source>
+				<target>DeepL</target>
 			</trans-unit>
 			<trans-unit id="TYPO3.lang.localize.educate.deepl">
 				<source>

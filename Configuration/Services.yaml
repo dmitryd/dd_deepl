@@ -15,5 +15,8 @@ services:
         hidden: false
         schedulable: false
 
+  Dmitryd\DdDeepl\Configuration\Configuration:
+    public: true
+
   Dmitryd\DdDeepl\Hook\DataHandlerTranslationHook:
     public: true

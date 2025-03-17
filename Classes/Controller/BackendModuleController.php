@@ -38,7 +38,6 @@ use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
-use TYPO3\CMS\Core\Messaging\AbstractMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Site\SiteFinder;
@@ -64,7 +63,7 @@ class BackendModuleController extends ActionController
     /**
      * Creates the instance of the class.
      */
-    public function __construct()
+    public function __construct(protected readonly ModuleTemplateFactory $moduleTemplateFactory)
     {
         $this->pageUid = (int)($GLOBALS['TYPO3_REQUEST']->getQueryParams()['id'] ?? 0);
         $this->pageInformation = BackendUtility::readPageAccess($this->pageUid, '');
@@ -88,7 +87,7 @@ class BackendModuleController extends ActionController
                 FlashMessage::class,
                 '',
                 LocalizationUtility::translate('module.error', 'dd_deepl', [$exception->getCode(), $exception->getMessage()]),
-                AbstractMessage::ERROR,
+                ContextualFeedbackSeverity::ERROR,
                 true
             );
             $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
@@ -137,7 +136,7 @@ class BackendModuleController extends ActionController
             FlashMessage::class,
             '',
             LocalizationUtility::translate('module.glossary.delete.done', 'dd_deepl', [$info->name, $glossaryId]),
-            AbstractMessage::OK,
+            ContextualFeedbackSeverity::OK,
             true
         );
         $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
@@ -161,7 +160,7 @@ class BackendModuleController extends ActionController
             'glossaries' => $service->listGlossaries(),
             'id' => $this->pageUid,
         ]);
-        return $this->moduleTemplate->renderResponse();
+        return $this->moduleTemplate->renderResponse('BackendModule/Glossary');
     }
 
     /**
@@ -171,7 +170,7 @@ class BackendModuleController extends ActionController
      */
     public function noPageIdAction(): ResponseInterface
     {
-        return $this->moduleTemplate->renderResponse();
+        return $this->moduleTemplate->renderResponse('BackendModule/NoPageId');
     }
 
     /**
@@ -198,7 +197,7 @@ class BackendModuleController extends ActionController
                 'glossaryCount' => count($service->listGlossaries()),
             ]);
         }
-        return $this->moduleTemplate->renderResponse();
+        return $this->moduleTemplate->renderResponse('BackendModule/Overview');
     }
 
     /**
@@ -225,7 +224,7 @@ class BackendModuleController extends ActionController
             'sourceLanguage' => $sourceLanguage,
             'targetLanguage' => $targetLanguage,
         ]);
-        return $this->moduleTemplate->renderResponse();
+        return $this->moduleTemplate->renderResponse('BackendModule/UploadForm');
     }
 
     /**
@@ -334,7 +333,7 @@ class BackendModuleController extends ActionController
                 FlashMessage::class,
                 '',
                 LocalizationUtility::translate('module.error', 'dd_deepl', [$exception->getCode(), $exception->getMessage()]),
-                AbstractMessage::ERROR,
+                ContextualFeedbackSeverity::ERROR,
                 true
             );
             $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
@@ -343,7 +342,7 @@ class BackendModuleController extends ActionController
 
             return $this->redirect('glossary');
         }
-        return $this->moduleTemplate->renderResponse();
+        return $this->moduleTemplate->renderResponse('BackendModule/ViewGlossary');
     }
 
     /**
@@ -457,9 +456,9 @@ class BackendModuleController extends ActionController
     }
 
     /** @inheritDoc */
-    protected function initializeAction()
+    protected function initializeAction(): void
     {
-        $this->moduleTemplate = GeneralUtility::makeInstance(ModuleTemplateFactory::class)->create($this->request);
+        $this->moduleTemplate = $this->moduleTemplateFactory->create($this->request);
         $this->createMenu();
         $this->createButtons();
 
@@ -495,7 +494,7 @@ class BackendModuleController extends ActionController
     }
 
     /** @inheritDoc */
-    protected function resolveActionMethodName()
+    protected function resolveActionMethodName(): string
     {
         return $this->pageUid === 0 ? 'noPageIdAction' : parent::resolveActionMethodName();
     }
