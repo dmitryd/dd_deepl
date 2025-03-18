@@ -10,8 +10,8 @@ $EM_CONF[$_EXTKEY] = [
     'category' => 'be',
     'constraints' => [
         'depends' => [
-            'php' => '8.0.0-8.1.999',
-            'typo3' => '12.4.0-12.4.999',
+            'php' => '8.2.0-8.3.999',
+            'typo3' => '13.4.0-13.4.999',
             'core' => '',
             'backend' => '',
         ],
@@ -28,5 +28,5 @@ $EM_CONF[$_EXTKEY] = [
     'author' => 'Dmitry Dulepov',
     'author_email' => 'dmitry.dulepov@gmail.com',
     'author_company' => '',
-    'version' => '12.7.0'
+    'version' => '13.0.0'
 ];
