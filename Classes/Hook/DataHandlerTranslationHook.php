@@ -83,8 +83,11 @@ class DataHandlerTranslationHook
                         $targetLanguage = $site->getLanguageById($fieldArray[$languageField]);
                         $translationSourceField = $GLOBALS['TCA'][$tableName]['ctrl']['transOrigPointerField'];
                         $sourceRecord = BackendUtility::getRecord($tableName, $fieldArray[$translationSourceField]);
-                        $translatedFieldArray = $service->translateRecord($tableName, $sourceRecord, $targetLanguage);
-                        ArrayUtility::mergeRecursiveWithOverrule($fieldArray, $translatedFieldArray);
+                        // TODO: investigate when/why this happens
+                        if ($sourceRecord) {
+                            $translatedFieldArray = $service->translateRecord($tableName, $sourceRecord, $targetLanguage);
+                            ArrayUtility::mergeRecursiveWithOverrule($fieldArray, $translatedFieldArray);
+                        }
                     } catch (SiteNotFoundException) {
                         // Nothing to do, record is outside of sites
                     } catch (\InvalidArgumentException) {
