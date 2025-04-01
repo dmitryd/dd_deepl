@@ -607,7 +607,16 @@ class DeeplTranslationService implements SingletonInterface
             if (isset($record[$languageFieldName])) {
                 // TODO Workspace support for pid
                 try {
-                    $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($record['pid']);
+                    $pageId = (int)$record['pid'];
+                    if ($pageId === 0 && $tableName  === 'pages') {
+                        if ($record['uid'] ?? false) {
+                            $pageId = $record['uid'];
+                        } else {
+                            $l10nParentField = $GLOBALS['TCA']['pages']['ctrl']['transOrigPointerField'] ?? '';
+                            $pageId = $record[$l10nParentField] ?? 0;
+                        }
+                    }
+                    $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($pageId);
                     $result = $site->getLanguageById($record[$languageFieldName]);
                 } catch (SiteNotFoundException $exception) {
                     // Nothing to do, record is outside of sites

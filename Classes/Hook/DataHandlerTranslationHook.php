@@ -73,13 +73,27 @@ class DataHandlerTranslationHook
      */
     public function processDatamap_postProcessFieldArray(string $status, string $tableName, $recordId, array &$fieldArray, DataHandler $dataHandler): void
     {
-        if (($fieldArray['pid'] ?? false) && ($this->isDeeplRequest() || $this->isNewPageTranslation($tableName, $recordId, $fieldArray))) {
+        if (isset($fieldArray['pid']) && ($this->isDeeplRequest() || $this->isNewPageTranslation($tableName, $recordId, $fieldArray))) {
             $languageField = $GLOBALS['TCA'][$tableName]['ctrl']['languageField'] ?? false;
             if ($languageField) {
                 $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
                 if ($service->isAvailable()) {
                     try {
-                        $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($fieldArray['pid']);
+                        $pidField = 'pid';
+                        if ((int)$fieldArray['pid'] === 0) {
+                            $pidField = $GLOBALS['TCA'][$tableName]['ctrl']['transOrigPointerField'] ?? '';
+                            if (!isset($fieldArray[$pidField])) {
+                                $this->logger->error(
+                                    sprintf(
+                                        'Unable to determine pid for the record from "%s" new new id "%s"',
+                                        $tableName,
+                                        $recordId
+                                    )
+                                );
+                                return;
+                            }
+                        }
+                        $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($fieldArray[$pidField]);
                         $targetLanguage = $site->getLanguageById($fieldArray[$languageField]);
                         $translationSourceField = $GLOBALS['TCA'][$tableName]['ctrl']['transOrigPointerField'];
                         $sourceRecord = BackendUtility::getRecord($tableName, $fieldArray[$translationSourceField]);
