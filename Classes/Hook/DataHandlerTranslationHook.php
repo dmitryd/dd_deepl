@@ -97,7 +97,7 @@ class DataHandlerTranslationHook
                         $targetLanguage = $site->getLanguageById($fieldArray[$languageField]);
                         $translationSourceField = $GLOBALS['TCA'][$tableName]['ctrl']['transOrigPointerField'];
                         $sourceRecord = BackendUtility::getRecord($tableName, $fieldArray[$translationSourceField]);
-                        // TODO: investigate when/why this happens
+                        // TODO: investigate when/why this happens - possibly free mode?
                         if ($sourceRecord) {
                             $translatedFieldArray = $service->translateRecord($tableName, $sourceRecord, $targetLanguage);
                             ArrayUtility::mergeRecursiveWithOverrule($fieldArray, $translatedFieldArray);
