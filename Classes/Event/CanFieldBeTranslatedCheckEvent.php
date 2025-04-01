@@ -72,9 +72,9 @@ class CanFieldBeTranslatedCheckEvent
     /**
      * Fetches the field value.
      *
-     * @return string
+     * @return ?string
      */
-    public function getFieldValue(): string
+    public function getFieldValue(): ?string
     {
         return $this->fieldValue;
     }
