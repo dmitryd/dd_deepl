@@ -67,7 +67,7 @@ class BackendModuleController extends ActionController
     public function __construct()
     {
         $this->pageUid = (int)($GLOBALS['TYPO3_REQUEST']->getQueryParams()['id'] ?? 0);
-        $this->pageInformation = BackendUtility::readPageAccess($this->pageUid, '');
+        $this->pageInformation = BackendUtility::readPageAccess($this->pageUid, '') ?: [];
     }
 
     /**
