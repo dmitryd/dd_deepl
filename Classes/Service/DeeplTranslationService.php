@@ -43,6 +43,7 @@ use Dmitryd\DdDeepl\Event\BeforeRecordTranslationEvent;
 use Dmitryd\DdDeepl\Event\CanFieldBeTranslatedCheckEvent;
 use Dmitryd\DdDeepl\Event\PreprocessFieldValueEvent;
 use Psr\Log\LoggerAwareTrait;
+use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Configuration\FlexForm\FlexFormTools;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\DataHandling\SlugHelper;
@@ -85,8 +86,9 @@ class DeeplTranslationService implements SingletonInterface
      * @param array $deeplOptions
      * @throws \DeepL\DeepLException
      */
-    public function __construct(array $deeplOptions = [])
+    public function __construct(FrontendInterface $cache, array $deeplOptions = [])
     {
+        $this->cache = $cache;
         $this->configuration = GeneralUtility::makeInstance(Configuration::class);
         $this->eventDispatcher = GeneralUtility::makeInstance(EventDispatcher::class);
 
@@ -104,21 +106,7 @@ class DeeplTranslationService implements SingletonInterface
             $apiKey = $this->configuration->getApiKey();
             if ($apiKey) {
                 $this->translator = new Translator($apiKey, $deeplOptions);
-                try {
-                    $this->sourceLanguages = $this->translator->getSourceLanguages();
-                    $this->targetLanguages = $this->translator->getTargetLanguages();
-                } catch (\Exception $exception) {
-                    $this->logger->error(
-                        sprintf(
-                            'Exception %s while fetching DeepL languages. Code %d, message "%s". Stack: %s',
-                            get_class($exception),
-                            $exception->getCode(),
-                            $exception->getMessage(),
-                            $exception->getTraceAsString()
-                        )
-                    );
-                    $this->translator = null;
-                }
+                $this->getCachedLanguages();
             }
         } else {
             $message = $GLOBALS['LANG']->sL('LLL:EXT:dd_deepl/Resources/Private/Language/locallang.xlf:not_composer');
@@ -135,6 +123,42 @@ class DeeplTranslationService implements SingletonInterface
             $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
             $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
             $defaultFlashMessageQueue->enqueue($flashMessage);
+        }
+    }
+
+    /**
+     * Tries to get the available source and target languages from the server and caches that result, as else there
+     * would be an API request on each backend page or list impression
+     *
+     * @return void
+     */
+    public function getCachedLanguages(): void
+    {
+        $cachedSourceLanguage = $this->cache->get('sourceLanguages');
+        $cachedTargetLanguage = $this->cache->get('targetLanguages');
+
+        if ($cachedSourceLanguage === false ||$cachedTargetLanguage === false) {
+            try {
+                $this->sourceLanguages = $this->translator->getSourceLanguages();
+                $this->cache->set('sourceLanguages', $this->sourceLanguages, ['dd_deepl'],3600);
+                $this->targetLanguages = $this->translator->getTargetLanguages();
+                $this->cache->set('targetLanguages', $this->targetLanguages, ['dd_deepl'], 3600);
+            } catch (\Exception $exception) {
+                $this->logger->error(
+                    sprintf(
+                        'Exception %s while fetching DeepL languages. Code %d, message "%s". Stack: %s',
+                        get_class($exception),
+                        $exception->getCode(),
+                        $exception->getMessage(),
+                        $exception->getTraceAsString()
+                    )
+                );
+                $this->translator = null;
+            }
+        }
+        else {
+            $this->sourceLanguages = $cachedSourceLanguage;
+            $this->targetLanguages = $cachedTargetLanguage;
         }
     }
 

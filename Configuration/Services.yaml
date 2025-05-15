@@ -17,3 +17,12 @@ services:
 
   Dmitryd\DdDeepl\Hook\DataHandlerTranslationHook:
     public: true
+
+  cache.deepl_cache:
+    class: TYPO3\CMS\Core\Cache\Frontend\FrontendInterface
+    factory: ['@TYPO3\CMS\Core\Cache\CacheManager', "getCache"]
+    arguments: ["dd_deepl"]
+
+  Dmitryd\DdDeepl\Service\DeeplTranslationService:
+    arguments:
+      - "@cache.deepl_cache"
