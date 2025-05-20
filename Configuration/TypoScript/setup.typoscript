@@ -12,5 +12,7 @@ module.tx_dddeepl {
     }
 
     maximumNumberOfGlossariesPerLanguage = {$module.tx_dddeepl.settings.maximumNumberOfGlossariesPerLanguage}
+
+    timeout = {$module.tx_dddeepl.settings.timeout}
   }
 }

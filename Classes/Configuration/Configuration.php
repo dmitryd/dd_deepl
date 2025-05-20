@@ -45,6 +45,8 @@ class Configuration
 
     protected int $maximumNumberOfGlossaries = 2;
 
+    protected int $timeout = 10;
+
     /**
      * Creates the instance of the class.
      */
@@ -68,6 +70,7 @@ class Configuration
         }
 
         $this->glossaries = $ts['settings.']['glossaries.'] ?? [];
+        $this->timeout = min(60, max((int)($ts['settings.']['timeout'] ?? 10), 3));
     }
 
     /**
@@ -112,6 +115,16 @@ class Configuration
     public function getMaximumNumberOfGlossaries(): int
     {
         return $this->maximumNumberOfGlossaries;
+    }
+
+    /**
+     * Returns the timeout in seconds.
+     *
+     * @return int
+     */
+    public function getTimeout(): int
+    {
+        return $this->timeout;
     }
 
     /**
