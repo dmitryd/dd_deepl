@@ -67,17 +67,9 @@ class DeeplTranslationService implements SingletonInterface
 {
     use LoggerAwareTrait;
 
-    protected array $availableGlossaries = [];
-
     protected Configuration $configuration;
 
     protected EventDispatcher $eventDispatcher;
-
-    /** @var \DeepL\Language[] */
-    protected array $sourceLanguages = [];
-
-    /** @var \DeepL\Language[] */
-    protected array $targetLanguages = [];
 
     protected ?Translator $translator = null;
 
@@ -106,22 +98,7 @@ class DeeplTranslationService implements SingletonInterface
             $apiKey = $this->configuration->getApiKey();
             if ($apiKey) {
                 $this->translator = new Translator($apiKey, $deeplOptions);
-                try {
-                    $this->sourceLanguages = $this->translator->getSourceLanguages();
-                    $this->targetLanguages = $this->translator->getTargetLanguages();
-                    foreach ($this->listGlossaries() as $info) {
-                        $this->availableGlossaries[] = $info->glossaryId;
-                    }
-                } catch (\Exception $exception) {
-                    $this->logger->error(
-                        sprintf(
-                            'Exception %s while fetching DeepL languages. Code %d, message "%s". Stack: %s',
-                            get_class($exception),
-                            $exception->getCode(),
-                            $exception->getMessage(),
-                            $exception->getTraceAsString()
-                        )
-                    );
+                if (!$this->isAvailable()) {
                     $this->translator = null;
                 }
             }
@@ -144,7 +121,9 @@ class DeeplTranslationService implements SingletonInterface
     }
 
     /**
-     * Creates a new glossary on DeepL server with given name, languages, and entries
+     * Creates a new glossary on DeepL server with given name, languages, and entries.
+     *
+     * You can call this method only if "isAvailable()" returns true.
      *
      * @param string $name User-defined name to assign to the glossary.
      * @param string $sourceLanguageIsoCode Language code of the glossary source terms
@@ -162,6 +141,8 @@ class DeeplTranslationService implements SingletonInterface
     /**
      * Creates a new glossary on DeepL server with given name, languages, and entries.
      *
+     * You can call this method only if "isAvailable()" returns true.
+     *
      * @param string $name User-defined name to assign to the glossary
      * @param string $sourceLanguageIsoCode Language code of the glossary source terms
      * @param string $targetLanguageIsoCode Language code of the glossary target terms
@@ -178,6 +159,8 @@ class DeeplTranslationService implements SingletonInterface
     /**
      * Deletes the glossary by id.
      *
+     * You can call this method only if "isAvailable()" returns true.
+     *
      * @param string $glossaryId
      * @throws \DeepL\DeepLException
      * @internal
@@ -189,6 +172,8 @@ class DeeplTranslationService implements SingletonInterface
 
     /**
      * Gets information about an existing glossary
+     *
+     * You can call this method only if "isAvailable()" returns true.
      *
      * @param string $glossaryId Glossary ID of the glossary
      * @return GlossaryInfo GlossaryInfo containing details about the glossary
@@ -203,6 +188,8 @@ class DeeplTranslationService implements SingletonInterface
     /**
      * Retrieves the entries stored with the glossary with the given glossary ID
      *
+     * You can call this method only if "isAvailable()" returns true.
+     *
      * @param string $glossaryId Glossary ID of the glossary
      * @return string[]
      * @throws DeepLException
@@ -216,6 +203,8 @@ class DeeplTranslationService implements SingletonInterface
     /**
      * Queries languages supported for glossaries by the DeepL API
      *
+     * You can call this method only if "isAvailable()" returns true.
+     *
      * @return GlossaryLanguagePair[]
      * @throws DeepLException
      * @internal
@@ -227,6 +216,8 @@ class DeeplTranslationService implements SingletonInterface
 
     /**
      * Fetches usage information
+     *
+     * You can call this method only if "isAvailable()" returns true.
      *
      * @return Usage
      * @throws \DeepL\DeepLException
@@ -243,21 +234,37 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function isAvailable(): bool
     {
-        if (!$this->translator) {
-            return false;
-        }
-        try {
-            // Best alternative to a ping function
-            $result = $this->translator->getUsage();
-        } catch (\Exception) {
+        static $cachedTestResult = null;
+
+        if ($cachedTestResult === null) {
             $result = null;
+            if ($this->translator) {
+                try {
+                    // Best alternative to a ping function
+                    $result = $this->translator->getUsage();
+                } catch (\Exception $exception) {
+                    $this->logger->error(
+                        sprintf(
+                            'DeepL is not available. Class: %s, code %d, message "%s". Stack: %s',
+                            get_class($exception),
+                            $exception->getCode(),
+                            $exception->getMessage(),
+                            $exception->getTraceAsString()
+                        )
+                    );
+                }
+            }
+            $cachedTestResult = ($result instanceof Usage) && !$result->anyLimitReached();
         }
 
-        return ($result instanceof Usage) && !$result->anyLimitReached();
+        return $cachedTestResult;
     }
 
     /**
      * Gets information about all existing glossaries.
+     *
+     * You can call this method only if "isAvailable()" returns true.
+     *
      * @return GlossaryInfo[] Array of GlossaryInfos containing details about all existing glossaries.
      * @throws DeepLException
      * @internal
@@ -269,6 +276,8 @@ class DeeplTranslationService implements SingletonInterface
 
     /**
      * Translates the record.
+     *
+     * You can call this method only if "isAvailable()" returns true.
      *
      * @param string $tableName
      * @param array $record
@@ -349,6 +358,8 @@ class DeeplTranslationService implements SingletonInterface
     /**
      * Translates a single field.
      *
+     * You can call this method only if "isAvailable()" returns true.
+     *
      * @param string $tableName
      * @param string $fieldName
      * @param string $fieldValue
@@ -376,6 +387,8 @@ class DeeplTranslationService implements SingletonInterface
     /**
      * Translates the text.
      *
+     * You can call this method only if "isAvailable()" returns true.
+     *
      * @param string $text
      * @param string $sourceLanguage
      * @param string $targetLanguage
@@ -393,7 +406,15 @@ class DeeplTranslationService implements SingletonInterface
         [$targetLanguageForGlossary] = explode('-', $targetLanguage);
         $glossary = $this->configuration->getGlossaryForLanguagePair($sourceLanguageForGlossary, $targetLanguageForGlossary);
         if ($glossary) {
-            if (in_array($glossary, $this->availableGlossaries)) {
+            static $availableGlossaries = null;
+
+            if ($availableGlossaries === null) {
+                $availableGlossaries = [];
+                foreach ($this->listGlossaries() as $info) {
+                    $availableGlossaries[] = $info->glossaryId;
+                }
+            }
+            if (in_array($glossary, $availableGlossaries)) {
                 $options[TranslateTextOptions::GLOSSARY] = $glossary;
             } else {
                 $this->logger->notice(
@@ -491,7 +512,7 @@ class DeeplTranslationService implements SingletonInterface
 
         if ($sourceLanguage->getLocale()->getLanguageCode() === $targetLanguage->getLocale()->getLanguageCode()) {
             $canTranslate = false;
-        } elseif (!$this->isSupportedLanguage($sourceLanguage, $this->sourceLanguages)) {
+        } elseif (!$this->isSupportedLanguage($sourceLanguage, false)) {
             $this->logger->notice(
                 sprintf(
                     'Language "%s" cannot be used as a source language because it is not supported',
@@ -499,7 +520,7 @@ class DeeplTranslationService implements SingletonInterface
                 )
             );
             $canTranslate = false;
-        } elseif (!$this->isSupportedLanguage($targetLanguage, $this->targetLanguages)) {
+        } elseif (!$this->isSupportedLanguage($targetLanguage, true)) {
             $this->logger->notice(
                 sprintf(
                     'Language "%s" cannot be used as a target language because it is not supported',
@@ -668,11 +689,28 @@ class DeeplTranslationService implements SingletonInterface
      * Checks if the language is supported by DeepL.
      *
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $siteLanguage
-     * @param \DeepL\Language[] $languages
+     * @param bool $isTarget
      * @return bool
      */
-    protected function isSupportedLanguage(SiteLanguage $siteLanguage, array $languages): bool
+    protected function isSupportedLanguage(SiteLanguage $siteLanguage, bool $isTarget): bool
     {
+        if ($isTarget) {
+            /** @var \DeepL\Language[] */
+            static $targetLanguages = [];
+
+            if (empty($this->targetLanguages)) {
+                $targetLanguages = $this->translator->getTargetLanguages();
+            }
+            $languages = $targetLanguages;
+        } else {
+            /** @var \DeepL\Language[] */
+            static $sourceLanguages = [];
+
+            if (empty($this->sourceLanguages)) {
+                $sourceLanguages = $this->translator->getSourceLanguages();
+            }
+            $languages = $sourceLanguages;
+        }
         $languageCode = $siteLanguage->getLocale()->getLanguageCode();
         $matchingLanguages = array_filter($languages, function (Language $language) use ($languageCode): bool {
             [$testCode] = explode('-', $language->code);
