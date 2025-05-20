@@ -97,8 +97,9 @@ class DeeplTranslationService implements SingletonInterface
             $deeplOptions = array_merge(
                 [
                     TranslatorOptions::PROXY => $this->getProxySettings(),
+                    TranslatorOptions::MAX_RETRIES => 1,
                     TranslatorOptions::SERVER_URL => $this->configuration->getApiUrl(),
-                    TranslatorOptions::TIMEOUT => 10,
+                    TranslatorOptions::TIMEOUT => $this->configuration->getTimeout(),
                 ],
                 $deeplOptions
             );
