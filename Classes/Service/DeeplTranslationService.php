@@ -25,6 +25,7 @@ namespace Dmitryd\DdDeepl\Service;
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+use DeepL\AppInfo;
 use DeepL\DeepLException;
 use DeepL\GlossaryEntries;
 use DeepL\GlossaryInfo;
@@ -57,6 +58,7 @@ use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
@@ -96,8 +98,10 @@ class DeeplTranslationService implements SingletonInterface
         if (Environment::isComposerMode()) {
             $deeplOptions = array_merge(
                 [
-                    TranslatorOptions::PROXY => $this->getProxySettings(),
+                    TranslatorOptions::APP_INFO => new AppInfo('dmitryd/dd-deepl', ExtensionManagementUtility::getExtensionVersion('dd_deepl')),
                     TranslatorOptions::MAX_RETRIES => 1,
+                    TranslatorOptions::PROXY => $this->getProxySettings(),
+                    TranslatorOptions::SEND_PLATFORM_INFO => false,
                     TranslatorOptions::SERVER_URL => $this->configuration->getApiUrl(),
                     TranslatorOptions::TIMEOUT => $this->configuration->getTimeout(),
                 ],
