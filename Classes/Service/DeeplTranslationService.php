@@ -74,6 +74,12 @@ class DeeplTranslationService implements SingletonInterface
 
     protected EventDispatcher $eventDispatcher;
 
+    /** @var \DeepL\Language[] */
+    protected array $sourceLanguages = [];
+
+    /** @var \DeepL\Language[] */
+    protected array $targetLanguages = [];
+
     protected ?Translator $translator = null;
 
     /**
@@ -538,7 +544,7 @@ class DeeplTranslationService implements SingletonInterface
 
         if ($sourceLanguage->getLocale()->getLanguageCode() === $targetLanguage->getLocale()->getLanguageCode()) {
             $canTranslate = false;
-        } elseif (!$this->isSupportedLanguage($sourceLanguage, false)) {
+        } elseif (!$this->isSupportedLanguage($sourceLanguage, $this->sourceLanguages)) {
             $this->logger->notice(
                 sprintf(
                     'Language "%s" cannot be used as a source language because it is not supported',
@@ -546,7 +552,7 @@ class DeeplTranslationService implements SingletonInterface
                 )
             );
             $canTranslate = false;
-        } elseif (!$this->isSupportedLanguage($targetLanguage, true)) {
+        } elseif (!$this->isSupportedLanguage($targetLanguage, $this->targetLanguages)) {
             $this->logger->notice(
                 sprintf(
                     'Language "%s" cannot be used as a target language because it is not supported',
@@ -718,25 +724,8 @@ class DeeplTranslationService implements SingletonInterface
      * @param bool $isTarget
      * @return bool
      */
-    protected function isSupportedLanguage(SiteLanguage $siteLanguage, bool $isTarget): bool
+    protected function isSupportedLanguage(SiteLanguage $siteLanguage, array $languages): bool
     {
-        if ($isTarget) {
-            /** @var \DeepL\Language[] */
-            static $targetLanguages = [];
-
-            if (empty($this->targetLanguages)) {
-                $targetLanguages = $this->translator->getTargetLanguages();
-            }
-            $languages = $targetLanguages;
-        } else {
-            /** @var \DeepL\Language[] */
-            static $sourceLanguages = [];
-
-            if (empty($this->sourceLanguages)) {
-                $sourceLanguages = $this->translator->getSourceLanguages();
-            }
-            $languages = $sourceLanguages;
-        }
         $languageCode = $siteLanguage->getLocale()->getLanguageCode();
         $matchingLanguages = array_filter($languages, function (Language $language) use ($languageCode): bool {
             [$testCode] = explode('-', $language->code);
