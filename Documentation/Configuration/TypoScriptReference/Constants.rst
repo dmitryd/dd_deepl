@@ -30,3 +30,14 @@ Constants
 
        module.tx_dddeepl.settings.maximumNumberOfGlossariesPerLanguage = 2
 
+..  confval:: timeout
+
+    :type: integer
+    :Default: 10
+
+    How long to wait for network requests to DeepL servers
+
+    Example::
+
+       module.tx_dddeepl.settings.timeout = 5
+
