@@ -44,3 +44,13 @@ Setup
 
     Maximum number of glossaries that can be added.
 
+..  confval:: timeout
+
+    :type: integer
+    :Default: :typoscript:`{$module.tx_dddeepl.settings.timeout}`
+
+    How long to wait for network requests to DeepL servers
+
+    Example::
+
+       module.tx_dddeepl.settings.timeout = 5
