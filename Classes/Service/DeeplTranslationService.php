@@ -146,6 +146,8 @@ class DeeplTranslationService implements SingletonInterface
         if (empty($cachedSourceLanguage) || empty($cachedTargetLanguage)) {
             try {
                 $this->sourceLanguages = $this->translator->getSourceLanguages();
+                // Prevent "too many requests": deepl does not like when we call this method one after another at once
+                sleep(1);
                 $this->targetLanguages = $this->translator->getTargetLanguages();
                 $cache->set('languages', [$this->sourceLanguages, $this->targetLanguages], ['dd_deepl'], 24*3600);
             } catch (\Exception $exception) {
