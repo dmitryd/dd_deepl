@@ -44,6 +44,7 @@ use Dmitryd\DdDeepl\Event\BeforeRecordTranslationEvent;
 use Dmitryd\DdDeepl\Event\CanFieldBeTranslatedCheckEvent;
 use Dmitryd\DdDeepl\Event\PreprocessFieldValueEvent;
 use Psr\Log\LoggerAwareTrait;
+use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Configuration\FlexForm\FlexFormTools;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\DataHandling\SlugHelper;
@@ -126,7 +127,42 @@ class DeeplTranslationService implements SingletonInterface
     }
 
     /**
-     * Creates a new glossary on DeepL server with given name, languages, and entries.
+     * Tries to get the available source and target languages from the server and caches that result, as else there
+     * would be an API request on each backend page or list impression
+     *
+     * @return void
+     */
+    public function getCachedLanguages(): void
+    {
+        $cache = GeneralUtility::makeInstance(CacheManager::class)->getCache('dd_deepl');
+        [$cachedSourceLanguage, $cachedTargetLanguage] = $cache->get('languages');
+
+        if (empty($cachedSourceLanguage) || empty($cachedTargetLanguage)) {
+            try {
+                $this->sourceLanguages = $this->translator->getSourceLanguages();
+                $this->targetLanguages = $this->translator->getTargetLanguages();
+                $cache->set('languages', [$this->sourceLanguages, $this->targetLanguages], ['dd_deepl'], 24*3600);
+            } catch (\Exception $exception) {
+                $this->logger->error(
+                    sprintf(
+                        'Exception %s while fetching DeepL languages. Code %d, message "%s". Stack: %s',
+                        get_class($exception),
+                        $exception->getCode(),
+                        $exception->getMessage(),
+                        $exception->getTraceAsString()
+                    )
+                );
+                $this->translator = null;
+            }
+        }
+        else {
+            $this->sourceLanguages = $cachedSourceLanguage;
+            $this->targetLanguages = $cachedTargetLanguage;
+        }
+    }
+
+    /**
+     * Creates a new glossary on DeepL server with given name, languages, and entries
      *
      * You can call this method only if "isAvailable()" returns true.
      *
@@ -497,6 +533,8 @@ class DeeplTranslationService implements SingletonInterface
     protected function canTranslate(SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): bool
     {
         $canTranslate = true;
+
+        $this->getCachedLanguages();
 
         if ($sourceLanguage->getLocale()->getLanguageCode() === $targetLanguage->getLocale()->getLanguageCode()) {
             $canTranslate = false;
