@@ -81,6 +81,8 @@ class DeeplTranslationService implements SingletonInterface
     protected array $targetLanguages = [];
 
     protected ?Translator $translator = null;
+    
+    protected bool $autoDetectSourceLang = false;
 
     /**
      * Creates the instance of the class.
@@ -451,6 +453,18 @@ class DeeplTranslationService implements SingletonInterface
             TranslateTextOptions::PRESERVE_FORMATTING => true,
             TranslateTextOptions::TAG_HANDLING => 'html',
         ];
+        
+        // only necessary for autodetect with potential glossary,
+        // otherwise passing null below is sufficient
+        if ($this->autoDetectSourceLang && $this->configuration->getCountGlossaries($this->translator) > 0) {
+            $sourceLanguage = $this->translator->translateText(
+                $text,
+                null,
+                $targetLanguage,
+                $options
+            )->detectedSourceLang;
+        }
+
         [$sourceLanguageForGlossary] = explode('-', $sourceLanguage);
         [$targetLanguageForGlossary] = explode('-', $targetLanguage);
         $glossary = $this->configuration->getGlossaryForLanguagePair($sourceLanguageForGlossary, $targetLanguageForGlossary);
@@ -477,7 +491,7 @@ class DeeplTranslationService implements SingletonInterface
 
         return empty($text) ? '' : $this->translator->translateText(
             $text,
-            $sourceLanguage,
+            ($this->autoDetectSourceLang && !$sourceLanguage) ? null : $sourceLanguage,
             $targetLanguage,
             $options
         );
@@ -566,11 +580,11 @@ class DeeplTranslationService implements SingletonInterface
         } elseif (!$this->isSupportedLanguage($sourceLanguage, $this->sourceLanguages)) {
             $this->logger->notice(
                 sprintf(
-                    'Language "%s" cannot be used as a source language because it is not supported',
+                    'Language "%s" is not supported as a source language. Will try to proceed using DeepL autodetection',
                     $sourceLanguage->getLocale()->getLanguageCode()
                 )
             );
-            $canTranslate = false;
+            $this->autoDetectSourceLang = true;
         } elseif (!$this->isSupportedLanguage($targetLanguage, $this->targetLanguages)) {
             $this->logger->notice(
                 sprintf(
