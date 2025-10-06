@@ -10,3 +10,10 @@ if (!\TYPO3\CMS\Core\Core\Environment::isCli()) {
     $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['dd_deepl'] ??= [];
     $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['dd_deepl']['backend'] ??= \TYPO3\CMS\Core\Cache\Backend\SimpleFileBackend::class;
 }
+
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTypoScriptConstants(
+    '@import \'EXT:dd_deepl/Configuration/TypoScript/constants.typoscript\''
+);
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTypoScriptSetup(
+    '@import \'EXT:dd_deepl/Configuration/TypoScript/setup.typoscript\''
+);
