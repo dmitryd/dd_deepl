@@ -26,7 +26,7 @@ namespace Dmitryd\DdDeepl\Configuration;
 ***************************************************************/
 
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Configuration\BackendConfigurationManager;
+use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
 
 /**
@@ -50,10 +50,9 @@ class Configuration
     /**
      * Creates the instance of the class.
      */
-    public function __construct()
+    public function __construct(ConfigurationManagerInterface $configurationManager)
     {
-        $configurationManager = GeneralUtility::makeInstance(BackendConfigurationManager::class);
-        $ts = $configurationManager->getTypoScriptSetup();
+        $ts = $configurationManager->getConfiguration(ConfigurationManagerInterface::CONFIGURATION_TYPE_FULL_TYPOSCRIPT);
         $ts = $ts['module.']['tx_dddeepl.'] ?? [];
 
         if (!isset($ts['settings.']['apiKey.']) || !is_array($ts['settings.']['apiKey.'])) {
