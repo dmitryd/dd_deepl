@@ -12,7 +12,8 @@ Install the extension using composer:
 
   composer require "dmitryd/dd-deepl"
 
-Add the static TypoScript template from :file:`EXT:dd_deepl/Configuration/TypoScript/` to your site
+If you need to use the console command, require also `undkonsorten/extbase-cli-aware-configuration-manager`
+and read the documebtation at https://github.com/undkonsorten/extbase-cli-aware-configuration-manager.
 
 Go to https://www.deepl.com/signup and sign up. Get a free API key.
 

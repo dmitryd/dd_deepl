@@ -14,6 +14,9 @@
 		"deepltranslate": "*",
 		"wv_deepltranslate": "*"
 	},
+	"suggest": {
+		"undkonsorten/extbase-cli-aware-configuration-manager": "*"
+	},
 	"autoload": {
 		"psr-4": {
 			"Dmitryd\\DdDeepl\\": "Classes"
