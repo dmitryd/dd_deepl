@@ -47,7 +47,7 @@ class SiteBasedConfiguration implements DeeplConfigurationInterface, LoggerAware
 
     protected int $maximumNumberOfGlossaries = 2;
 
-    protected int $timeout = 10;
+    protected int $timeout = 30;
 
     protected string $cacheIdentifier = 'site-configuration-none';
 
@@ -66,7 +66,7 @@ class SiteBasedConfiguration implements DeeplConfigurationInterface, LoggerAware
                 $this->apiUrl = str_ends_with($this->apiKey, ':fx') ? 'https://api-free.deepl.com' : 'https://api.deepl.com';
                 $this->maximumNumberOfGlossaries = (int)($configuration['maximumNumberOfGlossariesPerLanguage'] ?? 2);
                 $this->glossaries = is_array($configuration['glossaries'] ?? null) ? $configuration['glossaries'] : [];
-                $this->timeout = min(60, max((int)($configuration['timeout'] ?? 10), 3));
+                $this->timeout = min(60, max((int)($configuration['timeout'] ?? 30), 3));
             }
         }
     }

@@ -19,7 +19,7 @@ configuration:
 ..  code-block:: typoscript
 
     module.tx_dddeepl.settings.apiKey = your-api-key
-    module.tx_dddeepl.settings.timeout = 10
+    module.tx_dddeepl.settings.timeout = 30
     module.tx_dddeepl.settings.maximumNumberOfGlossariesPerLanguage = 2
     module.tx_dddeepl.settings.glossaries.de-en = 1a7170f3-edab-4c66-949a-4db3dc6a233f
 
@@ -27,7 +27,7 @@ configuration:
 
     ddDeepl:
       apiKey: '%env(TYPO3_DEEPL_API_KEY)%'
-      timeout: 10
+      timeout: 30
       maximumNumberOfGlossariesPerLanguage: 2
       glossaries:
         de-en: '1a7170f3-edab-4c66-949a-4db3dc6a233f'

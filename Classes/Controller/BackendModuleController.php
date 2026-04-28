@@ -35,8 +35,8 @@ use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Http\Response;
-use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
+use TYPO3\CMS\Core\Imaging\IconSize;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Site\Entity\Site;
@@ -404,7 +404,7 @@ class BackendModuleController extends ActionController
                     'placement' => 'bottom',
                     'title' => $title])
                 ->setTitle($title)
-                ->setIcon($iconFactory->getIcon($configuration['icon'], Icon::SIZE_SMALL));
+                ->setIcon($iconFactory->getIcon($configuration['icon'], IconSize::SMALL));
             $buttonBar->addButton($button, ButtonBar::BUTTON_POSITION_LEFT, 1);
         }
 

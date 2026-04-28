@@ -47,7 +47,7 @@ class LegacyTypoScriptConfiguration implements DeeplConfigurationInterface
 
     protected int $maximumNumberOfGlossaries = 2;
 
-    protected int $timeout = 10;
+    protected int $timeout = 30;
 
     /**
      * Creates the instance of this class.
@@ -74,7 +74,7 @@ class LegacyTypoScriptConfiguration implements DeeplConfigurationInterface
         }
 
         $this->glossaries = $ts['settings.']['glossaries.'] ?? [];
-        $this->timeout = min(60, max((int)($ts['settings.']['timeout'] ?? 10), 3));
+        $this->timeout = min(60, max((int)($ts['settings.']['timeout'] ?? 30), 3));
     }
 
     /**

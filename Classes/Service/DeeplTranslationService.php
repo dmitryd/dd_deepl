@@ -26,6 +26,7 @@ namespace Dmitryd\DdDeepl\Service;
 ***************************************************************/
 
 use DeepL\AppInfo;
+use DeepL\ConnectionException;
 use DeepL\DeepLException;
 use DeepL\GlossaryEntries;
 use DeepL\GlossaryInfo;
@@ -44,6 +45,7 @@ use Dmitryd\DdDeepl\Event\BeforeFieldTranslationEvent;
 use Dmitryd\DdDeepl\Event\BeforeRecordTranslationEvent;
 use Dmitryd\DdDeepl\Event\CanFieldBeTranslatedCheckEvent;
 use Dmitryd\DdDeepl\Event\PreprocessFieldValueEvent;
+use Dmitryd\DdDeepl\Localization\DeepLLocalizationScope;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use TYPO3\CMS\Core\Cache\CacheManager;
@@ -84,6 +86,8 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
 
     protected FrontendInterface $runtimeCache;
 
+    protected DeepLLocalizationScope $deepLLocalizationScope;
+
     protected ?Site $site = null;
 
     /** @var \DeepL\Language[] */
@@ -102,12 +106,13 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
      * @param array $deeplOptions
      * @throws \DeepL\DeepLException
      */
-    public function __construct(array $deeplOptions = [], ?FrontendInterface $runtimeCache = null, ?ConfigurationFactory $configurationFactory = null)
+    public function __construct(array $deeplOptions = [], ?FrontendInterface $runtimeCache = null, ?ConfigurationFactory $configurationFactory = null, ?DeepLLocalizationScope $deepLLocalizationScope = null)
     {
         $this->configurationFactory = $configurationFactory ?? GeneralUtility::makeInstance(ConfigurationFactory::class);
         $this->eventDispatcher = GeneralUtility::makeInstance(EventDispatcher::class);
         $this->deeplOptions = $deeplOptions;
         $this->runtimeCache = $runtimeCache ?? GeneralUtility::makeInstance(CacheManager::class)->getCache('runtime');
+        $this->deepLLocalizationScope = $deepLLocalizationScope ?? GeneralUtility::makeInstance(DeepLLocalizationScope::class);
 
         if (!Environment::isComposerMode()) {
             $message = $GLOBALS['LANG']->sL('LLL:EXT:dd_deepl/Resources/Private/Language/locallang.xlf:not_composer');
@@ -125,6 +130,16 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
             $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
             $defaultFlashMessageQueue->enqueue($flashMessage);
         }
+    }
+
+    /**
+     * Sets the DeepL localization scope used to collect user-facing errors.
+     *
+     * @param \Dmitryd\DdDeepl\Localization\DeepLLocalizationScope $deepLLocalizationScope
+     */
+    public function setDeepLLocalizationScope(DeepLLocalizationScope $deepLLocalizationScope): void
+    {
+        $this->deepLLocalizationScope = $deepLLocalizationScope;
     }
 
     /**
@@ -348,7 +363,6 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
      * @param array $exceptFieldNames
      * @return array
-     * @throws \DeepL\DeepLException
      */
     public function translateRecord(string $tableName, array $record, SiteLanguage $targetLanguage, array $exceptFieldNames = []): array
     {
@@ -378,7 +392,8 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
                                     $fieldValue,
                                     $ds,
                                     $sourceLanguage,
-                                    $targetLanguage
+                                    $targetLanguage,
+                                    $record['uid'] ?? null
                                 );
                             }
                         } else {
@@ -388,7 +403,8 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
                                 $fieldValue,
                                 $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config'],
                                 $sourceLanguage,
-                                $targetLanguage
+                                $targetLanguage,
+                                $record['uid'] ?? null
                             );
                         }
                         $wasTranslated = $translatedFields[$fieldName] !== $fieldValue;
@@ -432,7 +448,6 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $sourceLanguage
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
      * @return string
-     * @throws \DeepL\DeepLException
      */
     public function translateField(string $tableName, string $fieldName, string $fieldValue, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): string
     {
@@ -885,24 +900,46 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
      * @param string $tableName
      * @param string $fieldName
      * @param string $fieldValue
+     * @param array $tcaConfig
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $sourceLanguage
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
+     * @param int|string|null $recordUid
      * @return string
-     * @throws \DeepL\DeepLException
      */
-    protected function translateFieldInternal(string $tableName, string $fieldName, string $fieldValue, array $tcaConfig, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): string
+    protected function translateFieldInternal(string $tableName, string $fieldName, string $fieldValue, array $tcaConfig, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage, int|string|null $recordUid = null): string
     {
+        $originalFieldValue = $fieldValue;
         $fieldValue = $this->preprocessValueDependingOnType($tableName, $fieldName, (string)$fieldValue, $tcaConfig);
 
         $event = GeneralUtility::makeInstance(BeforeFieldTranslationEvent::class, $tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
         $this->eventDispatcher->dispatch($event);
         $fieldValue = $event->getFieldValue();
 
-        $fieldValue = $this->translateText(
-            $fieldValue,
-            $sourceLanguage->getLocale()->getLanguageCode(),
-            $this->getTargetLanguageCodeFromLocale($targetLanguage->getLocale())
-        );
+        $sourceLanguageCode = $sourceLanguage->getLocale()->getLanguageCode();
+        $targetLanguageCode = $this->getTargetLanguageCodeFromLocale($targetLanguage->getLocale());
+        try {
+            $fieldValue = $this->translateText(
+                $fieldValue,
+                $sourceLanguageCode,
+                $targetLanguageCode
+            );
+        } catch (DeepLException $exception) {
+            $logMessage = sprintf(
+                'Unable to translate field "%s" from "%s" to "%s" using DeepL. Original value is kept. Error: %s',
+                $this->getFieldIdentifier($tableName, $fieldName, $recordUid),
+                $sourceLanguageCode,
+                $targetLanguageCode,
+                $exception->getMessage()
+            );
+            $this->logger?->error($logMessage);
+            if ($this->deepLLocalizationScope->isActive()) {
+                $this->deepLLocalizationScope->addError(
+                    $this->getUserMessageForTranslationError($tableName, $fieldName, $exception, $recordUid)
+                );
+            }
+
+            return $originalFieldValue;
+        }
 
         $event = GeneralUtility::makeInstance(AfterFieldTranslatedEvent::class, $tableName, $fieldName, $fieldValue, $sourceLanguage, $targetLanguage);
         $this->eventDispatcher->dispatch($event);
@@ -910,6 +947,50 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
         $fieldValue = $event->getFieldValue();
 
         return $fieldValue;
+    }
+
+    /**
+     * Creates a user-facing message for a DeepL translation error.
+     *
+     * @param string $tableName
+     * @param string $fieldName
+     * @param \DeepL\DeepLException $exception
+     * @param int|string|null $recordUid
+     * @return string
+     */
+    protected function getUserMessageForTranslationError(string $tableName, string $fieldName, DeepLException $exception, int|string|null $recordUid = null): string
+    {
+        $fieldIdentifier = $this->getFieldIdentifier($tableName, $fieldName, $recordUid);
+        $isTimeout = $exception instanceof ConnectionException
+            && str_contains(strtolower($exception->getMessage()), 'timed out');
+        if ($isTimeout) {
+            return sprintf(
+                'DeepL did not respond in time while translating field "%s". The original text was kept. Please try again later or increase ddDeepl.timeout in the site configuration.',
+                $fieldIdentifier
+            );
+        }
+
+        return sprintf(
+            'DeepL could not translate field "%s". The original text was kept. Please check the TYPO3 log for details.',
+            $fieldIdentifier
+        );
+    }
+
+    /**
+     * Creates the field identifier for logs and user-facing messages.
+     *
+     * @param string $tableName
+     * @param string $fieldName
+     * @param int|string|null $recordUid
+     * @return string
+     */
+    protected function getFieldIdentifier(string $tableName, string $fieldName, int|string|null $recordUid = null): string
+    {
+        if ($recordUid !== null && $recordUid !== '') {
+            return sprintf('%s.%s.%s', $tableName, $recordUid, $fieldName);
+        }
+
+        return sprintf('%s.%s', $tableName, $fieldName);
     }
 
     /**
@@ -922,10 +1003,10 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
      * @param array $ds
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $sourceLanguage
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
+     * @param int|string|null $recordUid
      * @return array
-     * @throws \DeepL\DeepLException
      */
-    protected function translateFlexformSheetFields(string $tableName, string $fieldName, string $sheetName, array $fields, array $ds, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): array
+    protected function translateFlexformSheetFields(string $tableName, string $fieldName, string $sheetName, array $fields, array $ds, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage, int|string|null $recordUid = null): array
     {
         foreach ($fields as $name => &$field) {
             if (($config = $ds['sheets'][$sheetName]['ROOT']['el'][$name] ?? false)) {
@@ -939,11 +1020,12 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
                             $field['vDEF'],
                             $config['config'],
                             $sourceLanguage,
-                            $targetLanguage
+                            $targetLanguage,
+                            $recordUid
                         );
                     }
                 } elseif ($config['section'] ?? false) {
-                    $field['el'] = $this->translateFlexformSection($tableName, $currentFlexformFieldName, $ds, $config, $field['el'], $sourceLanguage, $targetLanguage);
+                    $field['el'] = $this->translateFlexformSection($tableName, $currentFlexformFieldName, $ds, $config, $field['el'], $sourceLanguage, $targetLanguage, $recordUid);
                 }
             }
         }
@@ -960,10 +1042,10 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
      * @param array $ds
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $sourceLanguage
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
+     * @param int|string|null $recordUid
      * @return string
-     * @throws \DeepL\DeepLException
      */
-    protected function translateFlexformField(string $tableName, string $fieldName, string $fieldValue, array $ds, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): string
+    protected function translateFlexformField(string $tableName, string $fieldName, string $fieldValue, array $ds, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage, int|string|null $recordUid = null): string
     {
         $fields = GeneralUtility::xml2array($fieldValue);
 
@@ -975,7 +1057,8 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
                 $sheetData['lDEF'],
                 $ds,
                 $sourceLanguage,
-                $targetLanguage
+                $targetLanguage,
+                $recordUid
             );
         }
 
@@ -996,10 +1079,10 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
      * @param array $section
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $sourceLanguage
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
+     * @param int|string|null $recordUid
      * @return array
-     * @throws \DeepL\DeepLException
      */
-    protected function translateFlexformSection(string $tableName, string $currentFlexformFieldName, array $ds, array $config, array &$section, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): array
+    protected function translateFlexformSection(string $tableName, string $currentFlexformFieldName, array $ds, array $config, array &$section, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage, int|string|null $recordUid = null): array
     {
         $sectionField = array_key_first($config['el']);
         foreach ($section as $k => &$structure) {
@@ -1013,7 +1096,8 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
                         $field['vDEF'],
                         $fieldTcaConfig['config'],
                         $sourceLanguage,
-                        $targetLanguage
+                        $targetLanguage,
+                        $recordUid
                     );
                 }
             }

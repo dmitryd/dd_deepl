@@ -18,7 +18,9 @@ localization.enableDeepL
 
 
 :aspect:`Description`
-   Enables the translation using DeepL in the user interface. Note that :php:`DataHandler` translations are not affected by these options.
+   Enables DeepL as a TYPO3 localization handler in the localization wizard.
+   Note that direct :php:`DataHandler` translations are not affected by this
+   option.
 
 :aspect:`Default`
    1
@@ -28,9 +30,6 @@ localization.enableDeepL
 
       mod {
          web_layout {
-             localization.enableDeepL = 1
-         }
-         web_list {
              localization.enableDeepL = 1
          }
       }

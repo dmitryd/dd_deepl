@@ -89,6 +89,7 @@ class ConfigurationFactory
         if ($request) {
             $site = $request->getAttribute('site');
             if (!$site instanceof Site) {
+                $site = null;
                 $queryParams = $request->getQueryParams() ?? [];
                 $pageId = (int)($queryParams['id'] ?? 0);
                 if ($pageId > 0) {

@@ -25,6 +25,7 @@ namespace Dmitryd\DdDeepl\Hook;
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+use Dmitryd\DdDeepl\Localization\DeepLLocalizationScope;
 use Dmitryd\DdDeepl\Service\DeeplTranslationService;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -37,24 +38,20 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * This class contains a hook to translate records using DeepL
- * when translation happens via DataHandler.  It uses a request,
- * so if you want to use DeepL service automatically
- * with DataHandler, you have to fake it like:
- *
- *   $originalRequest = $GLOBALS['TYPO3_REQUEST'];
- *   $queryParams = $request->getQueryParams();
- *   $queryParams['deepl'] = 1;
- *   $GLOBALS['TYPO3_REQUEST'] = $request->withQueryParams($queryParams);
- *   $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
- *   $dataHandler->start([], $commandMap);
- *   $dataHandler->process_cmdmap();
- *   $GLOBALS['TYPO3_REQUEST'] = $originalRequest;
+ * when translation happens via DataHandler inside a DeepL localization scope.
  *
  * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
 class DataHandlerTranslationHook implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
+
+    /**
+     * Creates the instance of this class.
+     */
+    public function __construct(protected DeepLLocalizationScope $deepLLocalizationScope)
+    {
+    }
 
     /**
      * Translated records via DeepL.
@@ -67,7 +64,7 @@ class DataHandlerTranslationHook implements LoggerAwareInterface
      */
     public function processDatamap_postProcessFieldArray(string $status, string $tableName, $recordId, array &$fieldArray, DataHandler $dataHandler): void
     {
-        if (isset($fieldArray['pid']) && ($this->isDeeplRequest() || $this->isNewPageTranslation($tableName, $recordId, $fieldArray))) {
+        if (isset($fieldArray['pid']) && $this->deepLLocalizationScope->isActive()) {
             $languageField = $GLOBALS['TCA'][$tableName]['ctrl']['languageField'] ?? false;
             if ($languageField) {
                 try {
@@ -87,6 +84,7 @@ class DataHandlerTranslationHook implements LoggerAwareInterface
                     }
                     $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($fieldArray[$pidField]);
                     $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+                    $service->setDeepLLocalizationScope($this->deepLLocalizationScope);
                     $service->setSite($site);
                     if ($service->isAvailable()) {
                         $targetLanguage = $site->getLanguageById($fieldArray[$languageField]);
@@ -102,14 +100,20 @@ class DataHandlerTranslationHook implements LoggerAwareInterface
                     // Nothing to do, record is outside of sites
                 } catch (\InvalidArgumentException) {
                     // Nothing to do - language does not exist on the site but the record has it
-                } catch (\Exception $exception) {
-                    $message = sprintf(
+                } catch (\Throwable $exception) {
+                    $logMessage = sprintf(
                         'Unable to translate record %1$s#%2$s using DeepL. Error: %3$s',
                         $tableName,
                         $recordId,
                         $exception->getMessage()
                     );
-                    $dataHandler->log($tableName, $recordId, 2, 0, 1, $message);
+                    $userMessage = sprintf(
+                        'DeepL could not translate record "%1$s#%2$s". The record was created, but some fields may contain original text. Please check the TYPO3 log for details.',
+                        $tableName,
+                        $recordId
+                    );
+                    $this->deepLLocalizationScope->addError($userMessage);
+                    $dataHandler->log($tableName, $recordId, 2, 0, 1, $logMessage);
                     $this->logger?->error(
                         sprintf(
                             'Unable to translate %s#%s. Message: \'%s\'. Stack: %s',
@@ -122,36 +126,5 @@ class DataHandlerTranslationHook implements LoggerAwareInterface
                 }
             }
         }
-    }
-
-    /**
-     * Checks if this is a DeepL request.
-     *
-     * @return bool
-     */
-    protected function isDeeplRequest(): bool
-    {
-        $request = $GLOBALS['TYPO3_REQUEST'];
-        /** @var \TYPO3\CMS\Core\Http\ServerRequest $request */
-        $queryParams = $request->getQueryParams() ?? [];
-        $parsedBody = $request->getParsedBody() ?? [];
-
-        return ($queryParams['deepl'] ?? false) || ($parsedBody['deepl'] ?? false);
-    }
-
-    /**
-     * Checks if the user is creating a new translation of the page.
-     *
-     * @param string $tableName
-     * @param mixed $recordId
-     * @param array $fieldArray
-     * @return bool
-     */
-    protected function isNewPageTranslation(string $tableName, $recordId, array $fieldArray): bool
-    {
-        return $tableName === 'pages' &&
-            ($fieldArray['sys_language_uid'] ?? 0) > 0 &&
-            str_starts_with((string)$recordId, 'NEW')
-        ;
     }
 }

@@ -5,7 +5,7 @@ to various languages. DeepL is possibly the best available online translator on 
 
 Differences from other similar extensions are:
 
-* No legacy code (the extension is made from scratch for TYPO3 11/12)
+* No legacy code (the extension uses the TYPO3 14 localization handler)
 * The extension uses official API instead of https calls
 * The extension allows to manage & use glossaries in an easy way
 * The code is minimalistic to make sure very little of needs to be changed in future
@@ -20,7 +20,7 @@ composer req "dmitryd/dd-deepl"
 ```yaml
 ddDeepl:
   apiKey: '%env(TYPO3_DEEPL_API_KEY)%'
-  timeout: 10
+  timeout: 30
   maximumNumberOfGlossariesPerLanguage: 2
   glossaries:
     de-en: '1a7170f3-edab-4c66-949a-4db3dc6a233f'
@@ -37,10 +37,9 @@ ddDeepl:
 
 ## Usage
 
-When you translate the page or content, you will see an additional option for using DeepL for translations.
-
-In the List module each language button is duplicated with a small DeepL overlay on it. Clicking this button will localize and translate
-the record using DeepL. Only tables with names starting from `tx_` can be translated (so no luck for `tt_address`, for example).
+When you translate a page, content element, or record, TYPO3 opens the
+localization wizard. Select DeepL as the localization handler to create the
+localized record and translate its fields with DeepL.
 
 ## Copyright
 

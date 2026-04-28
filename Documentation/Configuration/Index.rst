@@ -12,7 +12,7 @@ Configure the extension in the site configuration:
 
     ddDeepl:
       apiKey: '%env(TYPO3_DEEPL_API_KEY)%'
-      timeout: 10
+      timeout: 30
       maximumNumberOfGlossariesPerLanguage: 2
       glossaries:
         de-en: '1a7170f3-edab-4c66-949a-4db3dc6a233f'
@@ -42,7 +42,7 @@ Site configuration reference
 
     ..  confval:: ddDeepl.timeout
         :type: integer
-        :default: 10
+        :default: 30
 
         Timeout in seconds for network requests to DeepL. Values are limited
         to the effective range from :yaml:`3` to :yaml:`60`.

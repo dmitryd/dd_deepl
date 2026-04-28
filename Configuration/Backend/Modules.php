@@ -10,7 +10,7 @@ if (\TYPO3\CMS\Core\Core\Environment::isComposerMode()) {
             'labels' => 'LLL:EXT:dd_deepl/Resources/Private/Language/locallang.xlf',
             'inheritNavigationComponentFromMainModule' => false,
             'path' => '/module/site/DdDeepl',
-            'navigationComponent' => '@typo3/backend/page-tree/page-tree-element',
+            'navigationComponent' => '@typo3/backend/tree/page-tree-element',
             'extensionName' => 'DdDeepl',
             'controllerActions' => [
                 \Dmitryd\DdDeepl\Controller\BackendModuleController::class => [

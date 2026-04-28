@@ -15,25 +15,6 @@ This extension translates TYPO3 content and records using the DeepL
 translation service.
 You will need to register an account with DeepL.
 
-..  _screenshots:
-
-Screenshots
-===========
-
-..  figure:: /Images/TranslationWindow.jpg
-    :class: with-shadow
-    :alt: Translation window
-    :width: 500px
-
-    Additional button to translate content using DeepL.
-
-..  figure:: /Images/ListModule.jpg
-    :class: with-shadow
-    :alt: List module
-    :width: 500px
-
-    Additional button to translate content using DeepL inside the List module.
-
 Why this extension?
 ===================
 

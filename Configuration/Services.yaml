@@ -18,6 +18,17 @@ services:
   Dmitryd\DdDeepl\Service\DeeplTranslationService:
     arguments:
       $runtimeCache: '@cache.runtime'
+      $deepLLocalizationScope: '@Dmitryd\DdDeepl\Localization\DeepLLocalizationScope'
+
+  Dmitryd\DdDeepl\Localization\DeepLLocalizationHandler:
+    autoconfigure: false
+    tags:
+      - name: 'backend.localization.handler'
+        priority: 100
+
+  TYPO3\CMS\Backend\Controller\Wizard\LocalizationController:
+    arguments:
+      $localizationHandler: '@TYPO3\CMS\Backend\Localization\ManualLocalizationHandler'
 
   Dmitryd\DdDeepl\Hook\DataHandlerTranslationHook:
     public: true

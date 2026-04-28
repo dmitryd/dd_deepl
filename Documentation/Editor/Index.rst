@@ -8,20 +8,12 @@ For Editors
 
 Editors can translate content and records using DeepL.
 
-Translating content happens as usual by pressing a "Translate" button in the Page module. Translation window will show and additional button named "Translate with DeepL":
+Start the regular TYPO3 localization wizard from the Page module or from a
+record localization button. Select DeepL as the localization handler when the
+wizard asks how the localization should be processed.
 
-..  figure:: /Images/TranslationWindow.jpg
-    :class: with-shadow
-    :alt: Translation window
-    :width: 500px
+DeepL does not add a separate localization button. It is available as an
+option in the standard TYPO3 localization wizard.
 
-For records each language for each available translation is duplicated and a new button with a DeepL icon on it appears:
-
-
-..  figure:: /Images/ListModule.jpg
-    :class: with-shadow
-    :alt: List module
-    :width: 500px
-
-
-Records will get translations if combination of a source and a target language is supported by DeepL.
+Records will get translations if the combination of source and target language
+is supported by DeepL.
