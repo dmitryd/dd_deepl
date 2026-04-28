@@ -11,7 +11,7 @@ $EM_CONF[$_EXTKEY] = [
     'constraints' => [
         'depends' => [
             'php' => '8.2.0-8.4.999',
-            'typo3' => '13.4.0-13.4.999',
+            'typo3' => '14.4.0-14.4.999',
             'core' => '',
             'backend' => '',
         ],
@@ -28,5 +28,5 @@ $EM_CONF[$_EXTKEY] = [
     'author' => 'Dmitry Dulepov',
     'author_email' => 'dmitry.dulepov@gmail.com',
     'author_company' => '',
-    'version' => '13.1.3'
+    'version' => '14.0.0',
 ];

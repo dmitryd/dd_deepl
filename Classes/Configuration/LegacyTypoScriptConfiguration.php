@@ -5,7 +5,7 @@ namespace Dmitryd\DdDeepl\Configuration;
 /***************************************************************
 *  Copyright notice
 *
-*  (c) 2023 Dmitry Dulepov <dmitry.dulepov@gmail.com>
+*  (c) 2026 Dmitry Dulepov <dmitry.dulepov@gmail.com>
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -25,16 +25,18 @@ namespace Dmitryd\DdDeepl\Configuration;
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
 
 /**
- * This class contains configuration methods.
+ * This class contains legacy DeepL configuration loaded from TypoScript.
  *
  * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
-class Configuration
+#[Autoconfigure(public: true)]
+class LegacyTypoScriptConfiguration implements DeeplConfigurationInterface
 {
     protected string $apiUrl = '';
 
@@ -48,10 +50,12 @@ class Configuration
     protected int $timeout = 10;
 
     /**
-     * Creates the instance of the class.
+     * Creates the instance of this class.
      */
     public function __construct(ConfigurationManagerInterface $configurationManager)
     {
+        $this->triggerDeprecation();
+
         $ts = $configurationManager->getConfiguration(ConfigurationManagerInterface::CONFIGURATION_TYPE_FULL_TYPOSCRIPT);
         $ts = $ts['module.']['tx_dddeepl.'] ?? [];
 
@@ -74,10 +78,22 @@ class Configuration
     }
 
     /**
+     * Fetches an identifier for runtime caches.
+     *
+     * @return string
+     */
+    #[\Override]
+    public function getCacheIdentifier(): string
+    {
+        return 'legacy-typoscript';
+    }
+
+    /**
      * Fetches DeepL API host.
      *
      * @return string
      */
+    #[\Override]
     public function getApiUrl(): string
     {
         return $this->apiUrl;
@@ -88,6 +104,7 @@ class Configuration
      *
      * @return string
      */
+    #[\Override]
     public function getApiKey(): string
     {
         return $this->apiKey;
@@ -96,13 +113,14 @@ class Configuration
     /**
      * Fetches the glossary for language pairs.
      *
-     * @param string $sourceLangage
-     * @param string $targetLangage
+     * @param string $sourceLanguage
+     * @param string $targetLanguage
      * @return ?string
      */
-    public function getGlossaryForLanguagePair(string $sourceLangage, string $targetLangage): ?string
+    #[\Override]
+    public function getGlossaryForLanguagePair(string $sourceLanguage, string $targetLanguage): ?string
     {
-        $key = $sourceLangage . '-' . $targetLangage;
+        $key = $sourceLanguage . '-' . $targetLanguage;
 
         return $this->glossaries[$key] ?? null;
     }
@@ -112,6 +130,7 @@ class Configuration
      *
      * @return int
      */
+    #[\Override]
     public function getMaximumNumberOfGlossaries(): int
     {
         return $this->maximumNumberOfGlossaries;
@@ -122,6 +141,7 @@ class Configuration
      *
      * @return int
      */
+    #[\Override]
     public function getTimeout(): int
     {
         return $this->timeout;
@@ -132,8 +152,25 @@ class Configuration
      *
      * @return bool
      */
+    #[\Override]
     public function isConfigured(): bool
     {
         return !empty($this->getApiKey()) && !empty($this->getApiUrl());
+    }
+
+    /**
+     * Triggers the deprecation for the legacy configuration source.
+     */
+    protected function triggerDeprecation(): void
+    {
+        static $deprecationTriggered = false;
+
+        if (!$deprecationTriggered) {
+            trigger_error(
+                'EXT:dd_deepl TypoScript configuration is deprecated. Use site configuration key "ddDeepl" instead.',
+                E_USER_DEPRECATED
+            );
+            $deprecationTriggered = true;
+        }
     }
 }

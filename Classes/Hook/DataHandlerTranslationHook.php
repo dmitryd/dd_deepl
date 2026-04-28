@@ -26,7 +26,8 @@ namespace Dmitryd\DdDeepl\Hook;
 ***************************************************************/
 
 use Dmitryd\DdDeepl\Service\DeeplTranslationService;
-use Psr\Log\LoggerInterface;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
@@ -51,16 +52,9 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  *
  * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
-class DataHandlerTranslationHook
+class DataHandlerTranslationHook implements LoggerAwareInterface
 {
-    /**
-     * Creates the instance of the class.
-     *
-     * @param \Psr\Log\LoggerInterface $logger
-     */
-    public function __construct(protected LoggerInterface $logger)
-    {
-    }
+    use LoggerAwareTrait;
 
     /**
      * Translated records via DeepL.
@@ -76,24 +70,25 @@ class DataHandlerTranslationHook
         if (isset($fieldArray['pid']) && ($this->isDeeplRequest() || $this->isNewPageTranslation($tableName, $recordId, $fieldArray))) {
             $languageField = $GLOBALS['TCA'][$tableName]['ctrl']['languageField'] ?? false;
             if ($languageField) {
-                $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
-                if ($service->isAvailable()) {
-                    try {
-                        $pidField = 'pid';
-                        if ((int)$fieldArray['pid'] === 0) {
-                            $pidField = $GLOBALS['TCA'][$tableName]['ctrl']['transOrigPointerField'] ?? '';
-                            if (!isset($fieldArray[$pidField])) {
-                                $this->logger->error(
-                                    sprintf(
-                                        'Unable to determine pid for the record from "%s" new new id "%s"',
-                                        $tableName,
-                                        $recordId
-                                    )
-                                );
-                                return;
-                            }
+                try {
+                    $pidField = 'pid';
+                    if ((int)$fieldArray['pid'] === 0) {
+                        $pidField = $GLOBALS['TCA'][$tableName]['ctrl']['transOrigPointerField'] ?? '';
+                        if (!isset($fieldArray[$pidField])) {
+                            $this->logger?->error(
+                                sprintf(
+                                    'Unable to determine pid for the record from "%s" new new id "%s"',
+                                    $tableName,
+                                    $recordId
+                                )
+                            );
+                            return;
                         }
-                        $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($fieldArray[$pidField]);
+                    }
+                    $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($fieldArray[$pidField]);
+                    $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+                    $service->setSite($site);
+                    if ($service->isAvailable()) {
                         $targetLanguage = $site->getLanguageById($fieldArray[$languageField]);
                         $translationSourceField = $GLOBALS['TCA'][$tableName]['ctrl']['transOrigPointerField'];
                         $sourceRecord = BackendUtility::getRecord($tableName, $fieldArray[$translationSourceField]);
@@ -102,28 +97,28 @@ class DataHandlerTranslationHook
                             $translatedFieldArray = $service->translateRecord($tableName, $sourceRecord, $targetLanguage);
                             ArrayUtility::mergeRecursiveWithOverrule($fieldArray, $translatedFieldArray);
                         }
-                    } catch (SiteNotFoundException) {
-                        // Nothing to do, record is outside of sites
-                    } catch (\InvalidArgumentException) {
-                        // Nothing to do - language does not exist on the site but the record has it
-                    } catch (\Exception $exception) {
-                        $message = sprintf(
-                            'Unable to translate record %1$s#%2$s using DeepL. Error: %3$s',
+                    }
+                } catch (SiteNotFoundException) {
+                    // Nothing to do, record is outside of sites
+                } catch (\InvalidArgumentException) {
+                    // Nothing to do - language does not exist on the site but the record has it
+                } catch (\Exception $exception) {
+                    $message = sprintf(
+                        'Unable to translate record %1$s#%2$s using DeepL. Error: %3$s',
+                        $tableName,
+                        $recordId,
+                        $exception->getMessage()
+                    );
+                    $dataHandler->log($tableName, $recordId, 2, 0, 1, $message);
+                    $this->logger?->error(
+                        sprintf(
+                            'Unable to translate %s#%s. Message: \'%s\'. Stack: %s',
                             $tableName,
                             $recordId,
-                            $exception->getMessage()
-                        );
-                        $dataHandler->log($tableName, $recordId, 2, 0, 1, $message);
-                        $this->logger->error(
-                            sprintf(
-                                'Unable to translate %s#%s. Message: \'%s\'. Stack: %s',
-                                $tableName,
-                                $recordId,
-                                $exception->getMessage(),
-                                $exception->getTraceAsString()
-                            )
-                        );
-                    }
+                            $exception->getMessage(),
+                            $exception->getTraceAsString()
+                        )
+                    );
                 }
             }
         }

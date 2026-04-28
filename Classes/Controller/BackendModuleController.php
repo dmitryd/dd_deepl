@@ -27,7 +27,6 @@ namespace Dmitryd\DdDeepl\Controller;
 
 use DeepL\DeepLException;
 use DeepL\GlossaryInfo;
-use Dmitryd\DdDeepl\Configuration\Configuration;
 use Dmitryd\DdDeepl\Service\DeeplTranslationService;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
@@ -40,6 +39,7 @@ use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -78,7 +78,7 @@ class BackendModuleController extends ActionController
      */
     public function downloadGlossaryAction(string $glossaryId): ResponseInterface
     {
-        $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+        $service = $this->getDeeplTranslationService();
 
         try {
             $entries = $service->getGlossaryEntries($glossaryId);
@@ -124,7 +124,7 @@ class BackendModuleController extends ActionController
      */
     public function deleteGlossaryAction(string $glossaryId): ResponseInterface
     {
-        $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+        $service = $this->getDeeplTranslationService();
         $info = $service->getGlossary($glossaryId);
         try {
             $service->deleteGlossary($glossaryId);
@@ -155,7 +155,7 @@ class BackendModuleController extends ActionController
      */
     public function glossaryAction(string $glossaryId = ''): ResponseInterface
     {
-        $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+        $service = $this->getDeeplTranslationService();
         $this->moduleTemplate->assignMultiple([
             'glossaries' => $service->listGlossaries(),
             'id' => $this->pageUid,
@@ -181,8 +181,8 @@ class BackendModuleController extends ActionController
      */
     public function overviewAction(): ResponseInterface
     {
-        $configuration = GeneralUtility::makeInstance(Configuration::class);
-        $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+        $service = $this->getDeeplTranslationService();
+        $configuration = $service->getConfiguration();
 
         if ($service->isAvailable()) {
             $usage = $service->getUsage();
@@ -261,12 +261,12 @@ class BackendModuleController extends ActionController
         // Keep this check last because it is expensive
         elseif ($this->isLimitReachedForLanguages($sourceLanguage, $targetLanguage)) {
             $message = 'limit_reached';
-            $arguments[] = (int)$this->settings['maximumNumberOfGlossariesPerLanguage'];
+            $arguments[] = $this->getDeeplTranslationService()->getConfiguration()->getMaximumNumberOfGlossaries();
         } else {
             $fileName = GeneralUtility::tempnam('glossary-', '.csv');
             move_uploaded_file($_FILES['file']['tmp_name'], $fileName);
             try {
-                $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+                $service = $this->getDeeplTranslationService();
                 $service->createGlossaryFromCsv($glossaryName, $sourceLanguage, $targetLanguage, file_get_contents($fileName));
                 $severity = ContextualFeedbackSeverity::OK;
                 $message = 'uploaded';
@@ -322,7 +322,7 @@ class BackendModuleController extends ActionController
      */
     public function viewGlossaryAction(string $glossaryId): ResponseInterface
     {
-        $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+        $service = $this->getDeeplTranslationService();
         try {
             $this->moduleTemplate->assignMultiple([
                 'glossary' => $service->getGlossary($glossaryId),
@@ -433,7 +433,7 @@ class BackendModuleController extends ActionController
         $docHeaderComponent = $this->moduleTemplate->getDocHeaderComponent();
         $docHeaderComponent->setMetaInformation($this->pageInformation);
 
-        $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+        $service = $this->getDeeplTranslationService();
 
         if ($this->pageUid > 0 && $service->isAvailable()) {
             // Show menu only if we have a page id
@@ -455,14 +455,17 @@ class BackendModuleController extends ActionController
         }
     }
 
-    /** @inheritDoc */
+    /**
+     * Initializes the backend module action.
+     */
+    #[\Override]
     protected function initializeAction(): void
     {
         $this->moduleTemplate = $this->moduleTemplateFactory->create($this->request);
         $this->createMenu();
         $this->createButtons();
 
-        $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+        $service = $this->getDeeplTranslationService();
         $isAvailable = $service->isAvailable() && $this->pageUid > 0;
         $this->moduleTemplate->assignMultiple([
             'isConfigured' => $isAvailable,
@@ -480,7 +483,7 @@ class BackendModuleController extends ActionController
     protected function isLimitReachedForLanguages(string $sourceLanguage, string $targetLanguage): bool
     {
         try {
-            $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+            $service = $this->getDeeplTranslationService();
             $glossaries = $service->listGlossaries();
         } catch (DeepLException) {
             return false;
@@ -490,10 +493,47 @@ class BackendModuleController extends ActionController
             return $glossaryInfo->sourceLang === $sourceLanguage && $glossaryInfo->targetLang === $targetLanguage;
         });
 
-        return count($glossaries) >= (int)$this->settings['maximumNumberOfGlossariesPerLanguage'];
+        return count($glossaries) >= $this->getDeeplTranslationService()->getConfiguration()->getMaximumNumberOfGlossaries();
     }
 
-    /** @inheritDoc */
+    /**
+     * Creates the DeepL service for the current backend page.
+     *
+     * @return \Dmitryd\DdDeepl\Service\DeeplTranslationService
+     */
+    protected function getDeeplTranslationService(): DeeplTranslationService
+    {
+        $service = GeneralUtility::makeInstance(DeeplTranslationService::class);
+        $service->setSite($this->getSite());
+
+        return $service;
+    }
+
+    /**
+     * Fetches the site for the current backend page.
+     *
+     * @return \TYPO3\CMS\Core\Site\Entity\Site|null
+     */
+    protected function getSite(): ?Site
+    {
+        $site = null;
+        if ($this->pageUid > 0) {
+            try {
+                $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($this->pageUid);
+            } catch (SiteNotFoundException) {
+                $site = null;
+            }
+        }
+
+        return $site;
+    }
+
+    /**
+     * Resolves the action method depending on selected page id.
+     *
+     * @return string
+     */
+    #[\Override]
     protected function resolveActionMethodName(): string
     {
         return $this->pageUid === 0 ? 'noPageIdAction' : parent::resolveActionMethodName();

@@ -28,7 +28,8 @@ namespace Dmitryd\DdDeepl\Command;
 use DeepL\DeepLException;
 use DeepL\GlossaryInfo;
 use DeepL\GlossaryLanguagePair;
-use Dmitryd\DdDeepl\Configuration\Configuration;
+use Dmitryd\DdDeepl\Configuration\ConfigurationFactory;
+use Dmitryd\DdDeepl\Configuration\DeeplConfigurationInterface;
 use Dmitryd\DdDeepl\Service\DeeplTranslationService;
 use LucidFrame\Console\ConsoleTable;
 use Symfony\Component\Console\Command\Command;
@@ -36,6 +37,9 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use TYPO3\CMS\Core\Exception\SiteNotFoundException;
+use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
@@ -47,7 +51,7 @@ class ManageDeeplGlossariesCommand extends Command
 {
     protected const DATE_FORMAT = 'd.m.Y H:i';
 
-    protected Configuration $configuration;
+    protected DeeplConfigurationInterface $configuration;
 
     protected DeeplTranslationService $deeplTranslationService;
 
@@ -55,7 +59,12 @@ class ManageDeeplGlossariesCommand extends Command
 
     protected OutputInterface $output;
 
-    /** @inheritDoc */
+    protected ?Site $site = null;
+
+    /**
+     * Configures the DeepL glossary command options.
+     */
+    #[\Override]
     protected function configure(): void
     {
         $this->setDescription('Manage DeepL glossaries');
@@ -81,20 +90,31 @@ class ManageDeeplGlossariesCommand extends Command
         $this->addOption('id', 'i', InputOption::VALUE_OPTIONAL, 'Glossary id');
         $this->addOption('name', 'g', InputOption::VALUE_OPTIONAL, 'Glossary name');
         $this->addOption('root', 'r', InputOption::VALUE_OPTIONAL, 'Root page id to use (if your instance has more than one)');
+        $this->addOption('site', null, InputOption::VALUE_OPTIONAL, 'Site identifier to use (if your instance has more than one)');
         $this->addOption('source-language', 's', InputOption::VALUE_OPTIONAL, 'Source language');
         $this->addOption('target-language', 't', InputOption::VALUE_OPTIONAL, 'Target language');
     }
 
-    /** @inheritDoc */
+    /**
+     * Executes the DeepL glossary command.
+     *
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @return int
+     */
+    #[\Override]
     public function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->input = $input;
         $this->output = $output;
 
-        $this->setRootPageId();
+        if (!$this->selectSite()) {
+            return 1;
+        }
 
-        $this->configuration = GeneralUtility::makeInstance(Configuration::class);
+        $this->configuration = GeneralUtility::makeInstance(ConfigurationFactory::class)->create($this->site);
         $this->deeplTranslationService = GeneralUtility::makeInstance(DeeplTranslationService::class);
+        $this->deeplTranslationService->setSite($this->site);
 
         if (!$this->configuration->isConfigured()) {
             $this->output->writeln('DeepL is not configured for this site');
@@ -383,13 +403,42 @@ class ManageDeeplGlossariesCommand extends Command
     }
 
     /**
-     * Sets the root page for the configuration to use.
+     * Selects the site for the command.
+     *
+     * @return bool
      */
-    protected function setRootPageId(): void
+    protected function selectSite(): bool
     {
-        $pid = $this->input->getOption('root');
-        if (!empty($pid)) {
-            $_GET['id'] = $pid;
+        $result = true;
+        $rootPageId = $this->input->getOption('root');
+        $siteIdentifier = $this->input->getOption('site');
+        if (!empty($rootPageId) && !empty($siteIdentifier)) {
+            $this->output->writeln('Use either "--root" or "--site", not both.');
+            return false;
         }
+
+        $siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
+        try {
+            if (!empty($siteIdentifier)) {
+                $this->site = $siteFinder->getSiteByIdentifier((string)$siteIdentifier);
+            } elseif (!empty($rootPageId)) {
+                $_GET['id'] = $rootPageId;
+                $this->site = $siteFinder->getSiteByPageId((int)$rootPageId);
+            } else {
+                $sites = $siteFinder->getAllSites();
+                if (count($sites) === 1) {
+                    $this->site = reset($sites);
+                    $_GET['id'] = $this->site->getRootPageId();
+                } elseif (count($sites) > 1) {
+                    $this->output->writeln('This TYPO3 instance has multiple sites. Use "--site" or "--root".');
+                    $result = false;
+                }
+            }
+        } catch (SiteNotFoundException $exception) {
+            $this->output->writeln($exception->getMessage());
+            $result = false;
+        }
+
+        return $result;
     }
 }

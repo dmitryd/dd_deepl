@@ -15,8 +15,9 @@ services:
         hidden: false
         schedulable: false
 
-  Dmitryd\DdDeepl\Configuration\Configuration:
-    public: true
+  Dmitryd\DdDeepl\Service\DeeplTranslationService:
+    arguments:
+      $runtimeCache: '@cache.runtime'
 
   Dmitryd\DdDeepl\Hook\DataHandlerTranslationHook:
     public: true

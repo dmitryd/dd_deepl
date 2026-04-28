@@ -1,0 +1,2 @@
+# cat=basic; type=string; label=Configuration source (siteConfiguration or legacyTypoScript)
+configurationSource = siteConfiguration

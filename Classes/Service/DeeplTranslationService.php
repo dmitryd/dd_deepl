@@ -36,25 +36,28 @@ use DeepL\TranslateTextOptions;
 use DeepL\Translator;
 use DeepL\TranslatorOptions;
 use DeepL\Usage;
-use Dmitryd\DdDeepl\Configuration\Configuration;
+use Dmitryd\DdDeepl\Configuration\ConfigurationFactory;
+use Dmitryd\DdDeepl\Configuration\DeeplConfigurationInterface;
 use Dmitryd\DdDeepl\Event\AfterFieldTranslatedEvent;
 use Dmitryd\DdDeepl\Event\AfterRecordTranslatedEvent;
 use Dmitryd\DdDeepl\Event\BeforeFieldTranslationEvent;
 use Dmitryd\DdDeepl\Event\BeforeRecordTranslationEvent;
 use Dmitryd\DdDeepl\Event\CanFieldBeTranslatedCheckEvent;
 use Dmitryd\DdDeepl\Event\PreprocessFieldValueEvent;
+use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use TYPO3\CMS\Core\Cache\CacheManager;
+use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Configuration\FlexForm\FlexFormTools;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\DataHandling\SlugHelper;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Localization\Locale;
-use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\SingletonInterface;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
@@ -66,13 +69,22 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  *
  * @author Dmitry Dulepov <dmitry.dulepov@gmail.com>
  */
-class DeeplTranslationService implements SingletonInterface
+class DeeplTranslationService implements SingletonInterface, LoggerAwareInterface
 {
     use LoggerAwareTrait;
 
-    protected Configuration $configuration;
+    protected ?DeeplConfigurationInterface $configuration = null;
+
+    protected ConfigurationFactory $configurationFactory;
 
     protected EventDispatcher $eventDispatcher;
+
+    /** @var array<string, mixed> */
+    protected array $deeplOptions = [];
+
+    protected FrontendInterface $runtimeCache;
+
+    protected ?Site $site = null;
 
     /** @var \DeepL\Language[] */
     protected array $sourceLanguages = [];
@@ -82,42 +94,25 @@ class DeeplTranslationService implements SingletonInterface
 
     protected ?Translator $translator = null;
 
+    protected string $translatorCacheIdentifier = '';
+
     /**
      * Creates the instance of the class.
      *
      * @param array $deeplOptions
      * @throws \DeepL\DeepLException
      */
-    public function __construct(array $deeplOptions = [])
+    public function __construct(array $deeplOptions = [], ?FrontendInterface $runtimeCache = null, ?ConfigurationFactory $configurationFactory = null)
     {
-        $this->configuration = GeneralUtility::makeInstance(Configuration::class);
+        $this->configurationFactory = $configurationFactory ?? GeneralUtility::makeInstance(ConfigurationFactory::class);
         $this->eventDispatcher = GeneralUtility::makeInstance(EventDispatcher::class);
+        $this->deeplOptions = $deeplOptions;
+        $this->runtimeCache = $runtimeCache ?? GeneralUtility::makeInstance(CacheManager::class)->getCache('runtime');
 
-        $this->setLogger(GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__));
-
-        if (Environment::isComposerMode()) {
-            $deeplOptions = array_merge(
-                [
-                    TranslatorOptions::APP_INFO => new AppInfo('dmitryd/dd-deepl', ExtensionManagementUtility::getExtensionVersion('dd_deepl')),
-                    TranslatorOptions::MAX_RETRIES => 1,
-                    TranslatorOptions::PROXY => $this->getProxySettings(),
-                    TranslatorOptions::SEND_PLATFORM_INFO => false,
-                    TranslatorOptions::SERVER_URL => $this->configuration->getApiUrl(),
-                    TranslatorOptions::TIMEOUT => $this->configuration->getTimeout(),
-                ],
-                $deeplOptions
-            );
-            $apiKey = $this->configuration->getApiKey();
-            if ($apiKey) {
-                $this->translator = new Translator($apiKey, $deeplOptions);
-                if (!$this->isAvailable()) {
-                    $this->translator = null;
-                }
-            }
-        } else {
+        if (!Environment::isComposerMode()) {
             $message = $GLOBALS['LANG']->sL('LLL:EXT:dd_deepl/Resources/Private/Language/locallang.xlf:not_composer');
 
-            $this->logger->critical($message);
+            $this->logger?->critical($message);
 
             $flashMessage = GeneralUtility::makeInstance(
                 FlashMessage::class,
@@ -133,25 +128,43 @@ class DeeplTranslationService implements SingletonInterface
     }
 
     /**
+     * Sets the site context for the next DeepL operations.
+     *
+     * @param \TYPO3\CMS\Core\Site\Entity\Site|null $site
+     * @return $this
+     */
+    public function setSite(?Site $site): self
+    {
+        $this->site = $site;
+        $this->configuration = null;
+        $this->translator = null;
+        $this->translatorCacheIdentifier = '';
+
+        return $this;
+    }
+
+    /**
      * Tries to get the available source and target languages from the server and caches that result, as else there
      * would be an API request on each backend page or list impression
-     *
-     * @return void
      */
     public function getCachedLanguages(): void
     {
+        $configuration = $this->getConfiguration();
         $cache = GeneralUtility::makeInstance(CacheManager::class)->getCache('dd_deepl');
-        [$cachedSourceLanguage, $cachedTargetLanguage] = $cache->get('languages');
+        $cacheIdentifier = 'languages_' . md5($configuration->getCacheIdentifier());
+        $cachedLanguages = $cache->get($cacheIdentifier);
+        [$cachedSourceLanguage, $cachedTargetLanguage] = is_array($cachedLanguages) ? $cachedLanguages : [null, null];
 
         if (empty($cachedSourceLanguage) || empty($cachedTargetLanguage)) {
             try {
-                $this->sourceLanguages = $this->translator->getSourceLanguages();
+                $translator = $this->getTranslator();
+                $this->sourceLanguages = $translator->getSourceLanguages();
                 // Prevent "too many requests": deepl does not like when we call this method one after another at once
                 sleep(1);
-                $this->targetLanguages = $this->translator->getTargetLanguages();
-                $cache->set('languages', [$this->sourceLanguages, $this->targetLanguages], ['dd_deepl'], 24*3600);
+                $this->targetLanguages = $translator->getTargetLanguages();
+                $cache->set($cacheIdentifier, [$this->sourceLanguages, $this->targetLanguages], ['dd_deepl'], 24*3600);
             } catch (\Exception $exception) {
-                $this->logger->error(
+                $this->logger?->error(
                     sprintf(
                         'Exception %s while fetching DeepL languages. Code %d, message "%s". Stack: %s',
                         get_class($exception),
@@ -160,10 +173,10 @@ class DeeplTranslationService implements SingletonInterface
                         $exception->getTraceAsString()
                     )
                 );
-                $this->translator = null;
+                $this->sourceLanguages = [];
+                $this->targetLanguages = [];
             }
-        }
-        else {
+        } else {
             $this->sourceLanguages = $cachedSourceLanguage;
             $this->targetLanguages = $cachedTargetLanguage;
         }
@@ -184,7 +197,7 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function createGlossary(string $name, string $sourceLanguageIsoCode, string $targetLanguageIsoCode, GlossaryEntries $entries): GlossaryInfo
     {
-        return $this->translator->createGlossary($name, $sourceLanguageIsoCode, $targetLanguageIsoCode, $entries);
+        return $this->getTranslator()->createGlossary($name, $sourceLanguageIsoCode, $targetLanguageIsoCode, $entries);
     }
 
     /**
@@ -202,7 +215,7 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function createGlossaryFromCsv(string $name, string $sourceLanguageIsoCode, string $targetLanguageIsoCode, string $csvContent): GlossaryInfo
     {
-        return $this->translator->createGlossaryFromCsv($name, $sourceLanguageIsoCode, $targetLanguageIsoCode, $csvContent);
+        return $this->getTranslator()->createGlossaryFromCsv($name, $sourceLanguageIsoCode, $targetLanguageIsoCode, $csvContent);
     }
 
     /**
@@ -216,7 +229,7 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function deleteGlossary(string $glossaryId)
     {
-        $this->translator->deleteGlossary($glossaryId);
+        $this->getTranslator()->deleteGlossary($glossaryId);
     }
 
     /**
@@ -231,7 +244,7 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function getGlossary(string $glossaryId): GlossaryInfo
     {
-        return $this->translator->getGlossary($glossaryId);
+        return $this->getTranslator()->getGlossary($glossaryId);
     }
 
     /**
@@ -246,7 +259,7 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function getGlossaryEntries(string $glossaryId): array
     {
-        return $this->translator->getGlossaryEntries($glossaryId)->getEntries();
+        return $this->getTranslator()->getGlossaryEntries($glossaryId)->getEntries();
     }
 
     /**
@@ -260,7 +273,7 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function getGlossaryLanguages(): array
     {
-        return $this->translator->getGlossaryLanguages();
+        return $this->getTranslator()->getGlossaryLanguages();
     }
 
     /**
@@ -273,7 +286,7 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function getUsage(): Usage
     {
-        return $this->translator->getUsage();
+        return $this->getTranslator()->getUsage();
     }
 
     /**
@@ -283,16 +296,17 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function isAvailable(): bool
     {
-        static $cachedTestResult = null;
+        $configuration = $this->getConfiguration();
+        $cacheIdentifier = 'dd_deepl_available_' . md5($configuration->getCacheIdentifier() . $configuration->getApiKey());
 
-        if ($cachedTestResult === null) {
+        if (!$this->runtimeCache->has($cacheIdentifier)) {
             $result = null;
-            if ($this->translator) {
+            if ($configuration->isConfigured()) {
                 try {
                     // Best alternative to a ping function
-                    $result = $this->translator->getUsage();
+                    $result = $this->getTranslator()->getUsage();
                 } catch (\Exception $exception) {
-                    $this->logger->error(
+                    $this->logger?->error(
                         sprintf(
                             'DeepL is not available. Class: %s, code %d, message "%s". Stack: %s',
                             get_class($exception),
@@ -304,9 +318,10 @@ class DeeplTranslationService implements SingletonInterface
                 }
             }
             $cachedTestResult = ($result instanceof Usage) && !$result->anyLimitReached();
+            $this->runtimeCache->set($cacheIdentifier, $cachedTestResult);
         }
 
-        return $cachedTestResult;
+        return (bool)$this->runtimeCache->get($cacheIdentifier);
     }
 
     /**
@@ -320,7 +335,7 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function listGlossaries(): array
     {
-        return $this->translator->listGlossaries();
+        return $this->getTranslator()->listGlossaries();
     }
 
     /**
@@ -337,6 +352,8 @@ class DeeplTranslationService implements SingletonInterface
      */
     public function translateRecord(string $tableName, array $record, SiteLanguage $targetLanguage, array $exceptFieldNames = []): array
     {
+        $this->setSite($this->getRecordSite($tableName, $record));
+
         $translatedFields = [];
 
         $event = GeneralUtility::makeInstance(BeforeRecordTranslationEvent::class, $tableName, $record, $targetLanguage, $exceptFieldNames);
@@ -453,20 +470,22 @@ class DeeplTranslationService implements SingletonInterface
         ];
         [$sourceLanguageForGlossary] = explode('-', $sourceLanguage);
         [$targetLanguageForGlossary] = explode('-', $targetLanguage);
-        $glossary = $this->configuration->getGlossaryForLanguagePair($sourceLanguageForGlossary, $targetLanguageForGlossary);
+        $configuration = $this->getConfiguration();
+        $glossary = $configuration->getGlossaryForLanguagePair($sourceLanguageForGlossary, $targetLanguageForGlossary);
         if ($glossary) {
-            static $availableGlossaries = null;
+            static $availableGlossaries = [];
 
-            if ($availableGlossaries === null) {
-                $availableGlossaries = [];
+            $cacheIdentifier = $configuration->getCacheIdentifier();
+            if (!isset($availableGlossaries[$cacheIdentifier])) {
+                $availableGlossaries[$cacheIdentifier] = [];
                 foreach ($this->listGlossaries() as $info) {
-                    $availableGlossaries[] = $info->glossaryId;
+                    $availableGlossaries[$cacheIdentifier][] = $info->glossaryId;
                 }
             }
-            if (in_array($glossary, $availableGlossaries)) {
+            if (in_array($glossary, $availableGlossaries[$cacheIdentifier])) {
                 $options[TranslateTextOptions::GLOSSARY] = $glossary;
             } else {
-                $this->logger->notice(
+                $this->logger?->notice(
                     sprintf(
                         'Glossary with id=%s is configured but does not exist and therefore ignored.',
                         $glossary
@@ -475,7 +494,7 @@ class DeeplTranslationService implements SingletonInterface
             }
         }
 
-        return empty($text) ? '' : $this->translator->translateText(
+        return empty($text) ? '' : $this->getTranslator()->translateText(
             $text,
             $sourceLanguage,
             $targetLanguage,
@@ -551,28 +570,33 @@ class DeeplTranslationService implements SingletonInterface
     /**
      * Checks if translation is supported for these languages.
      *
-     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $sourceLanguage
+     * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage|null $sourceLanguage
      * @param \TYPO3\CMS\Core\Site\Entity\SiteLanguage $targetLanguage
      * @return bool
      */
-    protected function canTranslate(SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): bool
+    protected function canTranslate(?SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): bool
     {
         $canTranslate = true;
 
-        $this->getCachedLanguages();
-
+        if ($sourceLanguage === null) {
+            return false;
+        }
         if ($sourceLanguage->getLocale()->getLanguageCode() === $targetLanguage->getLocale()->getLanguageCode()) {
             $canTranslate = false;
-        } elseif (!$this->isSupportedLanguage($sourceLanguage, $this->sourceLanguages)) {
-            $this->logger->notice(
+        } else {
+            $this->getCachedLanguages();
+        }
+
+        if ($canTranslate && !$this->isSupportedLanguage($sourceLanguage, $this->sourceLanguages)) {
+            $this->logger?->notice(
                 sprintf(
                     'Language "%s" cannot be used as a source language because it is not supported',
                     $sourceLanguage->getLocale()->getLanguageCode()
                 )
             );
             $canTranslate = false;
-        } elseif (!$this->isSupportedLanguage($targetLanguage, $this->targetLanguages)) {
-            $this->logger->notice(
+        } elseif ($canTranslate && !$this->isSupportedLanguage($targetLanguage, $this->targetLanguages)) {
+            $this->logger?->notice(
                 sprintf(
                     'Language "%s" cannot be used as a target language because it is not supported',
                     $targetLanguage->getLocale()->getLanguageCode()
@@ -606,7 +630,7 @@ class DeeplTranslationService implements SingletonInterface
                 );
                 $dataStructureArray = $flexFormTools->parseDataStructureByIdentifier($dataStructureIdentifier);
             } catch (\Exception $exception) {
-                $this->logger->debug(
+                $this->logger?->debug(
                     sprintf(
                         'Exception %s, code %d, message: "%s" while fetching datas tructure for %s.%s',
                         get_class($exception),
@@ -649,7 +673,7 @@ class DeeplTranslationService implements SingletonInterface
                     $result = $GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy']['http'] ?? '';
                 }
                 if (is_array($GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy']['no'])) {
-                    $apiHost = parse_url($this->configuration->getApiUrl(), PHP_URL_HOST);
+                    $apiHost = parse_url($this->getConfiguration()->getApiUrl(), PHP_URL_HOST);
                     foreach ($GLOBALS['TYPO3_CONF_VARS']['HTTP']['proxy']['no'] as $entry) {
                         if (str_ends_with($apiHost, $entry)) {
                             $result = '';
@@ -661,6 +685,84 @@ class DeeplTranslationService implements SingletonInterface
         }
 
         return $result;
+    }
+
+    /**
+     * Fetches the current DeepL configuration.
+     *
+     * @return \Dmitryd\DdDeepl\Configuration\DeeplConfigurationInterface
+     */
+    public function getConfiguration(): DeeplConfigurationInterface
+    {
+        if ($this->configuration === null) {
+            $this->configuration = $this->configurationFactory->create($this->site ?? $this->configurationFactory->getSiteFromRequest());
+        }
+
+        return $this->configuration;
+    }
+
+    /**
+     * Creates or returns the DeepL translator for the current site.
+     *
+     * @return \DeepL\Translator
+     * @throws \DeepL\DeepLException
+     */
+    protected function getTranslator(): Translator
+    {
+        $configuration = $this->getConfiguration();
+        if (!$configuration->isConfigured()) {
+            throw new DeepLException('DeepL is not configured for this site');
+        }
+
+        $cacheIdentifier = md5($configuration->getCacheIdentifier() . $configuration->getApiKey());
+        if ($this->translator === null || $this->translatorCacheIdentifier !== $cacheIdentifier) {
+            $deeplOptions = array_merge(
+                [
+                    TranslatorOptions::APP_INFO => new AppInfo('dmitryd/dd-deepl', ExtensionManagementUtility::getExtensionVersion('dd_deepl')),
+                    TranslatorOptions::MAX_RETRIES => 1,
+                    TranslatorOptions::PROXY => $this->getProxySettings(),
+                    TranslatorOptions::SEND_PLATFORM_INFO => false,
+                    TranslatorOptions::SERVER_URL => $configuration->getApiUrl(),
+                    TranslatorOptions::TIMEOUT => $configuration->getTimeout(),
+                ],
+                $this->deeplOptions
+            );
+            $this->translator = new Translator($configuration->getApiKey(), $deeplOptions);
+            $this->translatorCacheIdentifier = $cacheIdentifier;
+        }
+
+        return $this->translator;
+    }
+
+    /**
+     * Fetches the site of a record.
+     *
+     * @param string $tableName
+     * @param array $record
+     * @return \TYPO3\CMS\Core\Site\Entity\Site|null
+     */
+    protected function getRecordSite(string $tableName, array $record): ?Site
+    {
+        $site = null;
+        $pageId = (int)($record['pid'] ?? 0);
+        if ($pageId === 0 && $tableName === 'pages') {
+            if ($record['uid'] ?? false) {
+                $pageId = (int)$record['uid'];
+            } else {
+                $l10nParentField = $GLOBALS['TCA']['pages']['ctrl']['transOrigPointerField'] ?? '';
+                $pageId = (int)($record[$l10nParentField] ?? 0);
+            }
+        }
+
+        if ($pageId > 0) {
+            try {
+                $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($pageId);
+            } catch (SiteNotFoundException) {
+                // Nothing to do, record is outside of sites
+            }
+        }
+
+        return $site;
     }
 
     /**

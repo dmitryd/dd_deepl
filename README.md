@@ -1,6 +1,6 @@
 # dd_deepl TYPO3 extension
 
-This projects contains a TYPO3 CMS extnsions that uses [DeepL](https://deepl.com/) official PHP API library to translate TYPO3 content
+This project contains a TYPO3 CMS extension that uses [DeepL](https://deepl.com/) official PHP API library to translate TYPO3 content
 to various languages. DeepL is possibly the best available online translator on the Internet.
 
 Differences from other similar extensions are:
@@ -16,8 +16,21 @@ Differences from other similar extensions are:
 ```
 composer req "dmitryd/dd-deepl"
 ```
-2. Add static Typoscript from `EXT:dd_deepl/Configuration/TypoScript/`
-3. Add DeepL API key either to TypoScript or to the `TYPO3_DEEPL_API_KEY` environment variable. You can get the key by registering with DeepL.
+2. Add DeepL settings to the site configuration:
+```yaml
+ddDeepl:
+  apiKey: '%env(TYPO3_DEEPL_API_KEY)%'
+  timeout: 10
+  maximumNumberOfGlossariesPerLanguage: 2
+  glossaries:
+    de-en: '1a7170f3-edab-4c66-949a-4db3dc6a233f'
+```
+3. Register with DeepL to get the API key.
+4. Set the `TYPO3_DEEPL_API_KEY` environment variable to that API key. The
+   `%env(TYPO3_DEEPL_API_KEY)%` value in the site configuration only reads this
+   variable; it does not create it.
+   You can also put the API key directly into the site configuration, but
+   committing that value to git is a security risk.
 
 
 **Warning!** Due to dependencies on various 3rd party packages, this extension works only if TYPO3 is installed in composer mode. There will be no support for non-composer installations.
