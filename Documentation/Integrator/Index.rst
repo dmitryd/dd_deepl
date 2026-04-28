@@ -14,35 +14,48 @@ Integrators can do the following with the extension:
 Add configuration
 =================
 
-In order to use DeepL, you need to obtain the API key and configure it in the extension. There are two types of the API key: free and paid.
+In order to use DeepL, you need to obtain the API key and configure it in the
+extension. There are two types of the API key: free and paid.
 
-Free API key is great for the development and testing. It has enough limits for both these tasks. Free key ends with `:fx`.
+Free API key is useful for development and testing. It has enough limits for
+both these tasks. Free key ends with :yaml:`:fx`.
 
 Paid API key has much higher limits. It is meant to be used in production.
 
-To obtain the API key you need to register with DeepL and get the key in your DeepL `account settings <https://www.deepl.com/pro-account>`__.
+To obtain the API key you need to register with DeepL and get the key in your
+DeepL `account settings <https://www.deepl.com/pro-account>`__.
 
-You can add API key via a :ref:`TypoScript constant <_configuration-typoscript-constants:>` or via the environment variable named `TYPO3_DEEPL_API_KEY`.
-Environment is recommended because you can easily set up different keys for different contexts: development, testing and production.
+Add the API key to the site configuration under :yaml:`ddDeepl.apiKey`. The
+value can use TYPO3 environment placeholders, for example
+:yaml:`%env(TYPO3_DEEPL_API_KEY)%`. Environment variables are recommended
+because they keep secrets out of the site configuration file.
+
+Legacy TypoScript configuration can still be enabled as a deprecated
+temporary fallback. See :ref:`migration`.
 
 Manage glossaries
 =================
 
-Glossaries is a way in DeepL to specify alternative translations to certain words. Some words can have generic accepted translations
-but if your site is very specific to a certain industry or activity kind, then words of one language may map to something other then
-DeepL would typically produce. This is where glossaries come in. They contain word pairs that map source words to target words.
+Glossaries are a way in DeepL to specify alternative translations to certain
+words. Some words can have generic accepted translations, but if your site is
+specific to a certain industry or activity, then words of one language may map
+to something other than DeepL would typically produce. This is where glossaries
+come in. They contain word pairs that map source words to target words.
 
 DeepL supports glossaries for `various language pairs <https://support.deepl.com/hc/en-us/articles/360021634540-About-the-glossary-feature>`__.
-There can be multiple glossaries per language combination. The extension allows you to add, delete, download and remove glossaries as well
-as see what glossaries you have.
+There can be multiple glossaries per language combination. The extension
+allows you to add, delete, download and remove glossaries, and to see what
+glossaries you have.
 
-.. attention::
-   Glossaries are added per API key. Make sure that you add them for both your free key (development and testing contexts) as well as
-   paid key (production) if you use separate keys for contexts.
+..  attention::
+    Glossaries are added per API key. Make sure that you add them for both
+    your free key (development and testing contexts) and paid key
+    (production) if you use separate keys for contexts.
 
-The extension allows you to specify the limit on the amount of glossaries per language pair. While DeepL itself does not impose any limits,
-it is good to have that number under control. Refer to the :ref:`TypoScript configuration <__configuration-typoscript>` reference for more
-information
+The extension allows you to specify the limit on the amount of glossaries per
+language pair. While DeepL itself does not impose any limits, it is good to
+have that number under control. Use
+:yaml:`ddDeepl.maximumNumberOfGlossariesPerLanguage` in site configuration.
 
 .. _how-to-manage-glossaries:
 
@@ -50,6 +63,11 @@ How to manage glossaries
 ========================
 
 Glossary management happens via the shell command or Backend module.
+
+When the command is executed without :bash:`--site` or :bash:`--root`, the
+extension auto-selects the site only if the TYPO3 instance has exactly one
+configured site. Instances with multiple sites must pass either :bash:`--site`
+or :bash:`--root`. Passing both options is an error.
 
 Here is the output of the shell command's help screen:
 
@@ -81,6 +99,7 @@ Here is the output of the shell command's help screen:
       -i, --id[=ID]                            Glossary id
       -g, --name[=NAME]                        Glossary name
       -r, --root[=ROOT]                        Root page id to use (if your instance has more than one)
+          --site[=SITE]                        Site identifier to use (if your instance has more than one)
       -s, --source-language[=SOURCE-LANGUAGE]  Source language
       -t, --target-language[=TARGET-LANGUAGE]  Target language
 
@@ -88,7 +107,8 @@ Here is the output of the shell command's help screen:
 Backend module
 ==============
 
-There is also Backend module where it is possible to view current API limits as well as information about uploaded glossaries.
-You can also upload glossaries via this module.
+There is also a Backend module where it is possible to view current API limits
+as well as information about uploaded glossaries. You can also upload
+glossaries via this module.
 
-The module is avaiable as `Site > DeepL` in the main menu.
+The module is available as :guilabel:`Site > DeepL` in the main menu.

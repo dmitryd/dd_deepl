@@ -9,6 +9,7 @@ Constants
 =========
 
 ..  confval:: apiKey
+    :name: typoscript-constant-api-key
 
     :type: string
     :Default: empty
@@ -20,6 +21,7 @@ Constants
        module.tx_dddeepl.settings.apiKey = <your value here>
 
 ..  confval:: maximumNumberOfGlossariesPerLanguage
+    :name: typoscript-constant-maximum-number-of-glossaries
 
     :type: integer
     :Default: 2
@@ -31,6 +33,7 @@ Constants
        module.tx_dddeepl.settings.maximumNumberOfGlossariesPerLanguage = 2
 
 ..  confval:: timeout
+    :name: typoscript-constant-timeout
 
     :type: integer
     :Default: 10
@@ -40,4 +43,3 @@ Constants
     Example::
 
        module.tx_dddeepl.settings.timeout = 5
-

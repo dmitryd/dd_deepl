@@ -8,20 +8,25 @@ Setup
 =====
 
 ..  confval:: apiKey
+    :name: typoscript-setup-api-key
 
     :type: string / stdWrap
     :Default: empty
 
-    Default is a constant. But if there is environment variable named :php:`TYPO3_DEEPL_API_KEY`, it will be used instead.
+    Default is a constant. If there is an environment variable named
+    :php:`TYPO3_DEEPL_API_KEY`, it will be used instead.
 
 ..  confval:: glossaries
+    :name: typoscript-setup-glossaries
 
     :type: array
     :Default: empty
 
-    An array of mappings betweem language pairs and glossary id values. You can find glossary id in the Backend module or
-    in the output of the glossary console command (see :ref:`_how-to-manage-glossaries`). In most cases DeepL uses the
-    glossary automaically but sometimes you need to specify it to be used for translations.
+    An array of mappings between language pairs and glossary id values. You
+    can find glossary id in the Backend module or in the output of the
+    glossary console command (see :ref:`_how-to-manage-glossaries`). In most
+    cases DeepL uses the glossary automatically, but sometimes you need to
+    specify it to be used for translations.
 
     Example:
 
@@ -38,6 +43,7 @@ Setup
     }
 
 ..  confval:: maximumNumberOfGlossariesPerLanguage
+    :name: typoscript-setup-maximum-number-of-glossaries
 
     :type: integer
     :Default: :typoscript:`{$module.tx_dddeepl.settings.maximumNumberOfGlossariesPerLanguage}`
@@ -45,6 +51,7 @@ Setup
     Maximum number of glossaries that can be added.
 
 ..  confval:: timeout
+    :name: typoscript-setup-timeout
 
     :type: integer
     :Default: :typoscript:`{$module.tx_dddeepl.settings.timeout}`

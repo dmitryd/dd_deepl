@@ -7,10 +7,21 @@
 For Developers
 ==============
 
-You can use :php:`Dmitryd\DdDeepl\Service\DeeplTranslationService` class to translate TYPO3 records (must have
-an entry in :php:`$GLOBALS['TCA']`), certain fields, or just texts. There is a number of events that can alter
-the behavior of the service. You can use them to get notified about translations, force or prevent a field
-from being translated or alter the field value before and after it is sent to DeepL.
+You can use the :php:`Dmitryd\DdDeepl\Service\DeeplTranslationService` class
+to translate TYPO3 records, certain fields, or plain texts. Records must have
+an entry in :php:`$GLOBALS['TCA']`.
+
+Create the service through dependency injection or
+:php:`GeneralUtility::makeInstance()`. If the current request does not contain
+a site context, call :php:`setSite()` before invoking DeepL operations.
+
+If no site can be resolved, or if the site has no :yaml:`ddDeepl.apiKey`, DeepL
+is treated as disabled.
+
+There are several events that can alter the behavior of the service. You can
+use them to get notified about translations, force or prevent a field from
+being translated, or alter the field value before and after it is sent to
+DeepL.
 
 ..  _developer-api:
 
@@ -26,39 +37,54 @@ Translation service
 
     This is the class you, as a developer, would use to translate data using DeepL.
 
-    ..  php:method:: __construct(array $deeplOptions = [])
+    ..  php:method:: __construct(array $deeplOptions = [], ?FrontendInterface $runtimeCache = null, ?ConfigurationFactory $configurationFactory = null)
 
-        Creates the instance of the class. You can pass additional options as described in the `DeepL documentation`_.
+        Creates the instance of the class. You can pass additional DeepL
+        options as described in the `DeepL documentation`_. The runtime cache
+        and configuration factory are injected by TYPO3 during normal service
+        creation.
 
         .. _DeepL documentation: https://github.com/DeepLcom/deepl-php#configuration
+
+    ..  php:method:: setSite(?Site $site): self
+
+        :returntype: :php:`self`
+        :returns: The current service instance.
+
+        Sets the site context for the next DeepL operations. Use this method
+        for CLI tasks, backend actions without a request site attribute, or
+        custom integrations that already know the target site.
 
     ..  php:method:: isAvailable(): bool
 
         :returntype: bool
-        :returns: :php:`true` if DeepL can process request with the current configuration and API limits.
+        :returns: :php:`true` if DeepL can process requests with the current
+            site configuration and API limits.
 
     ..  php:method:: translateRecord(string $tableName, array $record, SiteLanguage $targetLanguage, array $exceptFieldNames = []): array
 
         :returntype: array
         :returns: Array with translated fields
 
-        The method will go through each field in the record, evaluate if it can be translated and call DeepL for translation. The result is an array with translations.
+        The method will go through each field in the record, evaluate if it can
+        be translated and call DeepL for translation. The result is an array
+        with translations.
 
     ..  php:method:: translateField(string $tableName, string $fieldName, string $fieldValue, SiteLanguage $sourceLanguage, SiteLanguage $targetLanguage): string
 
         :returntype: string
         :returns: Translated field value
 
-        The method will get the value of the field and and call DeepL for translation. Unlike in
-        :php:`translateRecord()` there are no any kind of checks if the field can be translated at all.
+        The method will get the value of the field and call DeepL for
+        translation. Unlike in :php:`translateRecord()`, there are no checks
+        if the field can be translated.
 
     ..  php:method:: translateText(string $text, string $sourceLanguage, string $targetLanguage): string
 
         :returntype: string
         :returns: Translated field value
 
-        The method will get the value of the field and and call DeepL for translation. Unlike in
-        :php:`translateRecord()` there are no any kind of checks if the field can be translated at all.
+        The method will get the text and call DeepL for translation.
 
 Events
 ------
@@ -201,8 +227,8 @@ Events
 
 ..  php:class:: CanFieldBeTranslatedCheckEvent
 
-    This event is fired after the DeepL translation service evaluated whether the field can be
-    translated.
+    This event is fired after the DeepL translation service evaluated whether
+    the field can be translated.
 
     ..  php:method:: getTableName(): string
 
@@ -214,16 +240,20 @@ Events
         :returntype: string
         :returns: The field name
 
-    .. php:method:: getCanBeTranslated(): ?bool
+    ..  php:method:: getCanBeTranslated()
 
-        :returntype: ?bool
-        :returns: :php:`true`, if the service thinks that the field can be translated, :php:`false`, if definitely not, :php:`null`, if the service could not decide
+        :returntype: bool|null
+        :returns: :php:`true`, if the service thinks that the field can be
+            translated, :php:`false`, if definitely not, :php:`null`, if the
+            service could not decide.
 
-    .. php:method:: setCanBeTranslated(): void
+    ..  php:method:: setCanBeTranslated(): void
 
-        Pass :php:`true`, if the service thinks that the field can be translated, :php:`false`, if not.
-        Note that you cannot pass :php:`null` here. If you are unsure, do not set any value. The service
-        will not translate the field unless the value after all events is set to :php:`true`.
+        Pass :php:`true`, if the service thinks that the field can be
+        translated, :php:`false`, if not. Note that you cannot pass
+        :php:`null` here. If you are unsure, do not set any value. The service
+        will not translate the field unless the value after all events is set
+        to :php:`true`.
 
 
 ..  php:class:: PreprocessFieldValueEvent

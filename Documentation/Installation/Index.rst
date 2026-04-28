@@ -6,25 +6,32 @@
 Installation
 ============
 
-Install the extension using composer:
+Install the extension in a TYPO3 14 Composer installation:
 
-.. code-block:: bash
+..  code-block:: bash
 
-  composer require "dmitryd/dd-deepl"
-
-If you need to use the console command, require also `undkonsorten/extbase-cli-aware-configuration-manager`
-and read the documebtation at https://github.com/undkonsorten/extbase-cli-aware-configuration-manager.
+    composer require "dmitryd/dd-deepl"
 
 Go to https://www.deepl.com/signup and sign up. Get a free API key.
 
-Configure API key in the TypoScript constants like this:
+Configure DeepL in the site configuration:
 
-.. code-block:: typoscript
+..  code-block:: yaml
 
-  module.tx_dddeepl.settings.apiKey = <Insert your API key here>
+    ddDeepl:
+      apiKey: '%env(TYPO3_DEEPL_API_KEY)%'
+      timeout: 10
+      maximumNumberOfGlossariesPerLanguage: 2
+      glossaries:
+        de-en: '1a7170f3-edab-4c66-949a-4db3dc6a233f'
 
-You can also set DeepL API key via web server environment varable :php:`TYPO3_DEEPL_API_KEY`.
+If the environment variable is not set, DeepL is treated as disabled for
+that site.
+
+Legacy TypoScript configuration is available only as a deprecated opt-in
+fallback. See :ref:`migration` before using it.
 
 ..  warning::
-    Due to dependencies on various 3rd party packages, this extension works only if TYPO3 is installed in composer mode.
+    Due to dependencies on various third-party packages, this extension works
+    only if TYPO3 is installed in Composer mode.
     There will be no support for non-composer installations.

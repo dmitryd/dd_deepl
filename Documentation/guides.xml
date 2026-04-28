@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<guides xmlns="https://www.phpdoc.org/guides"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://www.phpdoc.org/guides ../vendor/phpdocumentor/guides-cli/resources/schema/guides.xsd"
+        default-code-language="php"
+        links-are-relative="true"
+>
+    <extension class="\T3Docs\Typo3DocsTheme\DependencyInjection\Typo3DocsThemeExtension"
+               edit-on-github="dmitryd/dd_deepl"
+               edit-on-github-branch="development"
+               interlink-shortcode="dmitryd/dd-deepl"
+               project-home="https://github.com/dmitryd/dd_deepl/"
+               project-issues="https://github.com/dmitryd/dd_deepl/issues"
+               project-repository="https://github.com/dmitryd/dd_deepl"
+               typo3-core-preferred="14.4"
+    />
+    <project title="DeepL Translate TYPO3 extension"
+             version="14.0"
+             release="14.0.0"
+             copyright="since 2023 by Dmitry Dulepov"
+    />
+    <inventory id="t3coreapi"
+               url="https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/"
+    />
+    <inventory id="t3tca"
+               url="https://docs.typo3.org/m/typo3/reference-tca/main/en-us/"
+    />
+    <inventory id="t3tsref"
+               url="https://docs.typo3.org/m/typo3/reference-typoscript/main/en-us/"
+    />
+</guides>
