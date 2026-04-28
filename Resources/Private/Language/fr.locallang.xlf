@@ -20,6 +20,14 @@
 					informations confidentielles ou sensibles en dehors de votre entreprise.
 				</target>
 			</trans-unit>
+			<trans-unit id="localization.warning.largeSelection.title">
+				<source>DeepL translation warning</source>
+				<target>Avertissement de traduction DeepL</target>
+			</trans-unit>
+			<trans-unit id="localization.warning.largeSelection.message">
+				<source>You selected %d content elements for DeepL translation. This can take a long time and may hit API timeouts. Consider translating the page in smaller parts.</source>
+				<target>Vous avez sélectionné %d éléments de contenu pour la traduction DeepL. Cela peut prendre beaucoup de temps et provoquer des délais d'attente de l'API. Pensez à traduire la page en plusieurs petites parties.</target>
+			</trans-unit>
 			<trans-unit id="not_composer">
 				<source>Extension "dd_deepl" only works if TYPO3 is installed with composer. Your installation uses obsolete legacy mode, which is not supported by this extension. Please, uninstall this extension!</source>
 				<target>L'extension "dd_deepl" ne fonctionne que si TYPO3 est installé avec composer. Votre installation utilise un mode obsolète, qui n'est pas supporté par cette extension. Veuillez désinstaller cette extension !</target>
