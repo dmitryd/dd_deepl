@@ -26,7 +26,6 @@ namespace Dmitryd\DdDeepl\Service;
 ***************************************************************/
 
 use DeepL\AppInfo;
-use DeepL\ConnectionException;
 use DeepL\DeepLException;
 use DeepL\GlossaryEntries;
 use DeepL\GlossaryInfo;
@@ -933,9 +932,7 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
             );
             $this->logger?->error($logMessage);
             if ($this->deepLLocalizationScope->isActive()) {
-                $this->deepLLocalizationScope->addError(
-                    $this->getUserMessageForTranslationError($tableName, $fieldName, $exception, $recordUid)
-                );
+                $this->deepLLocalizationScope->addGenericTranslationFailure();
             }
 
             return $originalFieldValue;
@@ -947,33 +944,6 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
         $fieldValue = $event->getFieldValue();
 
         return $fieldValue;
-    }
-
-    /**
-     * Creates a user-facing message for a DeepL translation error.
-     *
-     * @param string $tableName
-     * @param string $fieldName
-     * @param \DeepL\DeepLException $exception
-     * @param int|string|null $recordUid
-     * @return string
-     */
-    protected function getUserMessageForTranslationError(string $tableName, string $fieldName, DeepLException $exception, int|string|null $recordUid = null): string
-    {
-        $fieldIdentifier = $this->getFieldIdentifier($tableName, $fieldName, $recordUid);
-        $isTimeout = $exception instanceof ConnectionException
-            && str_contains(strtolower($exception->getMessage()), 'timed out');
-        if ($isTimeout) {
-            return sprintf(
-                'DeepL did not respond in time while translating field "%s". The original text was kept. Please try again later or increase ddDeepl.timeout in the site configuration.',
-                $fieldIdentifier
-            );
-        }
-
-        return sprintf(
-            'DeepL could not translate field "%s". The original text was kept. Please check the TYPO3 log for details.',
-            $fieldIdentifier
-        );
     }
 
     /**

@@ -28,6 +28,10 @@
 				<source>You selected %d content elements for DeepL translation. This can take a long time and may hit API timeouts. Consider translating the page in smaller parts.</source>
 				<target>Sie haben %d Inhaltselemente für die DeepL-Übersetzung ausgewählt. Dies kann lange dauern und zu API-Zeitüberschreitungen führen. Übersetzen Sie die Seite besser in kleineren Teilen.</target>
 			</trans-unit>
+			<trans-unit id="localization.error.someElementsNotTranslated">
+				<source>Some elements were not translated due to errors. You can try translating them again.</source>
+				<target>Einige Elemente wurden aufgrund von Fehlern nicht übersetzt. Sie können versuchen, sie erneut zu übersetzen.</target>
+			</trans-unit>
 			<trans-unit id="not_composer">
 				<source>Extension "dd_deepl" only works if TYPO3 is installed with composer. Your installation uses obsolete legacy mode, which is not supported by this extension. Please, uninstall this extension!</source>
 				<target>Die Extension "dd_deepl" funktioniert nur, wenn TYPO3 mit composer installiert ist. Ihre Installation verwendet den veralteten Legacy-Modus, der von dieser Extension nicht unterstützt wird. Bitte deinstallieren Sie diese Extension!</target>

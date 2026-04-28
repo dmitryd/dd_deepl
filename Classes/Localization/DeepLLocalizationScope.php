@@ -34,8 +34,12 @@ use TYPO3\CMS\Core\SingletonInterface;
  */
 class DeepLLocalizationScope implements SingletonInterface
 {
+    protected const TRANSLATION_FAILURE_LABEL = 'LLL:EXT:dd_deepl/Resources/Private/Language/locallang.xlf:localization.error.someElementsNotTranslated';
+
     /** @var string[] */
     protected array $errors = [];
+
+    protected int $translationFailureCount = 0;
 
     protected int $level = 0;
 
@@ -80,6 +84,25 @@ class DeepLLocalizationScope implements SingletonInterface
     }
 
     /**
+     * Adds a user-facing error and increments DeepL translation failure count.
+     *
+     * @param string $message
+     */
+    public function addTranslationFailure(string $message): void
+    {
+        ++$this->translationFailureCount;
+        $this->addError($message);
+    }
+
+    /**
+     * Adds the generic translated user-facing DeepL failure message.
+     */
+    public function addGenericTranslationFailure(): void
+    {
+        $this->addTranslationFailure($this->getTranslationFailureMessage());
+    }
+
+    /**
      * Fetches errors collected during the current DeepL localization run.
      *
      * @return string[]
@@ -90,12 +113,23 @@ class DeepLLocalizationScope implements SingletonInterface
     }
 
     /**
+     * Fetches the number of DeepL translation failures in the current run.
+     *
+     * @return int
+     */
+    public function getTranslationFailureCount(): int
+    {
+        return $this->translationFailureCount;
+    }
+
+    /**
      * Marks the start of a DeepL localization scope.
      */
     protected function enter(): void
     {
         if ($this->level === 0) {
             $this->errors = [];
+            $this->translationFailureCount = 0;
         }
         ++$this->level;
     }
@@ -106,5 +140,18 @@ class DeepLLocalizationScope implements SingletonInterface
     protected function leave(): void
     {
         $this->level = max(0, $this->level - 1);
+    }
+
+    /**
+     * Fetches the translated user-facing message for DeepL failures.
+     *
+     * @return string
+     */
+    protected function getTranslationFailureMessage(): string
+    {
+        $languageService = $GLOBALS['LANG'] ?? null;
+        $message = $languageService?->sL(self::TRANSLATION_FAILURE_LABEL) ?? '';
+
+        return $message !== '' ? $message : self::TRANSLATION_FAILURE_LABEL;
     }
 }

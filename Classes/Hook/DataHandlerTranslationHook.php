@@ -46,6 +46,9 @@ class DataHandlerTranslationHook implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
 
+    /** @var array<string, bool> */
+    protected array $recordsToDelete = [];
+
     /**
      * Creates the instance of this class.
      */
@@ -92,8 +95,12 @@ class DataHandlerTranslationHook implements LoggerAwareInterface
                         $sourceRecord = BackendUtility::getRecord($tableName, $fieldArray[$translationSourceField]);
                         // TODO: investigate when/why this happens - possibly free mode?
                         if ($sourceRecord) {
+                            $errorCount = $this->deepLLocalizationScope->getTranslationFailureCount();
                             $translatedFieldArray = $service->translateRecord($tableName, $sourceRecord, $targetLanguage);
                             ArrayUtility::mergeRecursiveWithOverrule($fieldArray, $translatedFieldArray);
+                            if ($status === 'new' && $tableName !== 'pages' && $this->deepLLocalizationScope->getTranslationFailureCount() > $errorCount) {
+                                $this->markRecordForDeletion($tableName, (string)$recordId);
+                            }
                         }
                     }
                 } catch (SiteNotFoundException) {
@@ -107,12 +114,10 @@ class DataHandlerTranslationHook implements LoggerAwareInterface
                         $recordId,
                         $exception->getMessage()
                     );
-                    $userMessage = sprintf(
-                        'DeepL could not translate record "%1$s#%2$s". The record was created, but some fields may contain original text. Please check the TYPO3 log for details.',
-                        $tableName,
-                        $recordId
-                    );
-                    $this->deepLLocalizationScope->addError($userMessage);
+                    $this->deepLLocalizationScope->addGenericTranslationFailure();
+                    if ($status === 'new' && $tableName !== 'pages') {
+                        $this->markRecordForDeletion($tableName, (string)$recordId);
+                    }
                     $dataHandler->log($tableName, $recordId, 2, 0, 1, $logMessage);
                     $this->logger?->error(
                         sprintf(
@@ -126,5 +131,75 @@ class DataHandlerTranslationHook implements LoggerAwareInterface
                 }
             }
         }
+    }
+
+    /**
+     * Deletes translated records that had DeepL translation errors.
+     *
+     * This keeps failed content records out of the localized page so editors
+     * can retry translating them later without hunting for original text.
+     *
+     * @param string $status
+     * @param string $tableName
+     * @param string|int $recordId
+     * @param array $fieldArray
+     * @param \TYPO3\CMS\Core\DataHandling\DataHandler $dataHandler
+     */
+    public function processDatamap_afterDatabaseOperations(string $status, string $tableName, $recordId, array $fieldArray, DataHandler $dataHandler): void
+    {
+        $recordKey = $this->getRecordKey($tableName, (string)$recordId);
+        if ($status !== 'new' || !isset($this->recordsToDelete[$recordKey])) {
+            return;
+        }
+        unset($this->recordsToDelete[$recordKey]);
+
+        $realRecordId = (int)($dataHandler->substNEWwithIDs[$recordId] ?? 0);
+        if ($realRecordId <= 0) {
+            return;
+        }
+        $deleteField = (string)($GLOBALS['TCA'][$tableName]['ctrl']['delete'] ?? '');
+        if ($deleteField === '') {
+            $this->logger?->warning(
+                sprintf(
+                    'Unable to remove failed DeepL localization %s#%d because the table has no delete field.',
+                    $tableName,
+                    $realRecordId
+                )
+            );
+            return;
+        }
+
+        $dataHandler->deleteAction($tableName, $realRecordId, true);
+
+        $message = sprintf(
+            'DeepL could not translate "%1$s#%2$d". The translated record was removed, and you can try translating it again later.',
+            $tableName,
+            $realRecordId
+        );
+        $dataHandler->log($tableName, $realRecordId, 2, 0, 1, $message);
+        $this->logger?->error($message);
+    }
+
+    /**
+     * Marks a new localized record for removal after it has a real uid.
+     *
+     * @param string $tableName
+     * @param string $recordId
+     */
+    protected function markRecordForDeletion(string $tableName, string $recordId): void
+    {
+        $this->recordsToDelete[$this->getRecordKey($tableName, $recordId)] = true;
+    }
+
+    /**
+     * Creates a stable key for tracking a DataHandler record id.
+     *
+     * @param string $tableName
+     * @param string $recordId
+     * @return string
+     */
+    protected function getRecordKey(string $tableName, string $recordId): string
+    {
+        return $tableName . ':' . $recordId;
     }
 }
