@@ -12,7 +12,7 @@
                project-home="https://github.com/dmitryd/dd_deepl/"
                project-issues="https://github.com/dmitryd/dd_deepl/issues"
                project-repository="https://github.com/dmitryd/dd_deepl"
-               typo3-core-preferred="14.4"
+               typo3-core-preferred="14.3"
     />
     <project title="DeepL Translate TYPO3 extension"
              version="14.0"
