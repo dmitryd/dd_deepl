@@ -33,6 +33,22 @@ because they keep secrets out of the site configuration file.
 Legacy TypoScript configuration can still be enabled as a deprecated
 temporary fallback. See :ref:`migration`.
 
+Translation errors and retries
+==============================
+
+DeepL translations are executed while TYPO3 creates localized records. If a
+single content element or related record cannot be translated, the extension
+removes that localized record again instead of keeping a translated record with
+original text.
+
+Editors see a generic message that some elements were not translated and can
+retry the translation later. Technical details, including the table, record
+identifier, field identifier and DeepL exception message, are written to the
+TYPO3 log.
+
+The timeout for DeepL requests is configured with :yaml:`ddDeepl.timeout`.
+The default timeout is :yaml:`30` seconds.
+
 Manage glossaries
 =================
 

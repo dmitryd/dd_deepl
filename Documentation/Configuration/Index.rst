@@ -47,6 +47,11 @@ Site configuration reference
         Timeout in seconds for network requests to DeepL. Values are limited
         to the effective range from :yaml:`3` to :yaml:`60`.
 
+        Larger pages may perform many DeepL requests. If DeepL does not
+        respond before the timeout, the affected localized records are removed
+        again so editors can retry them later. The technical error details are
+        written to the TYPO3 log.
+
     ..  confval:: ddDeepl.maximumNumberOfGlossariesPerLanguage
         :type: integer
         :default: 2
