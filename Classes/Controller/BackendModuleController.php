@@ -30,6 +30,7 @@ use DeepL\GlossaryInfo;
 use Dmitryd\DdDeepl\Service\DeeplTranslationService;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
+use TYPO3\CMS\Backend\Template\Components\ComponentFactory;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
@@ -63,7 +64,7 @@ class BackendModuleController extends ActionController
     /**
      * Creates the instance of the class.
      */
-    public function __construct(protected readonly ModuleTemplateFactory $moduleTemplateFactory)
+    public function __construct(protected readonly ModuleTemplateFactory $moduleTemplateFactory, protected readonly ComponentFactory $componentFactory)
     {
         $this->pageUid = (int)($GLOBALS['TYPO3_REQUEST']->getQueryParams()['id'] ?? 0);
         $this->pageInformation = BackendUtility::readPageAccess($this->pageUid, '');
@@ -86,7 +87,7 @@ class BackendModuleController extends ActionController
             $flashMessage = GeneralUtility::makeInstance(
                 FlashMessage::class,
                 '',
-                LocalizationUtility::translate('module.error', 'dd_deepl', [$exception->getCode(), $exception->getMessage()]),
+                LocalizationUtility::translate('module.error', 'DdDeepl', [$exception->getCode(), $exception->getMessage()]),
                 ContextualFeedbackSeverity::ERROR,
                 true
             );
@@ -135,7 +136,7 @@ class BackendModuleController extends ActionController
         $flashMessage = GeneralUtility::makeInstance(
             FlashMessage::class,
             '',
-            LocalizationUtility::translate('module.glossary.delete.done', 'dd_deepl', [$info->name, $glossaryId]),
+            LocalizationUtility::translate('module.glossary.delete.done', 'DdDeepl', [$info->name, $glossaryId]),
             ContextualFeedbackSeverity::OK,
             true
         );
@@ -210,7 +211,7 @@ class BackendModuleController extends ActionController
         try {
             $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($this->pageUid);
         } catch (SiteNotFoundException) {
-            $this->redirect('noPageId');
+            return $this->redirect('noPageId');
         }
         $languages = [];
         foreach ($site->getAllLanguages() as $siteLanguage) {
@@ -283,7 +284,7 @@ class BackendModuleController extends ActionController
         $flashMessage = GeneralUtility::makeInstance(
             FlashMessage::class,
             '',
-            LocalizationUtility::translate('module.upload.message.' . $message, 'dd_deepl', $arguments),
+            LocalizationUtility::translate('module.upload.message.' . $message, 'DdDeepl', $arguments),
             $severity,
             true
         );
@@ -332,7 +333,7 @@ class BackendModuleController extends ActionController
             $flashMessage = GeneralUtility::makeInstance(
                 FlashMessage::class,
                 '',
-                LocalizationUtility::translate('module.error', 'dd_deepl', [$exception->getCode(), $exception->getMessage()]),
+                LocalizationUtility::translate('module.error', 'DdDeepl', [$exception->getCode(), $exception->getMessage()]),
                 ContextualFeedbackSeverity::ERROR,
                 true
             );
@@ -393,8 +394,8 @@ class BackendModuleController extends ActionController
         }
 
         foreach ($buttons as $configuration) {
-            $title = LocalizationUtility::translate($configuration['label'], 'dd_deepl');
-            $button = $buttonBar->makeLinkButton()
+            $title = LocalizationUtility::translate($configuration['label'], 'DdDeepl');
+            $button = $this->componentFactory->createLinkButton()
                 ->setHref($uriBuilder->reset()->setRequest($this->request)->uriFor(
                     $configuration['action'],
                     $configuration['arguments']
@@ -410,7 +411,7 @@ class BackendModuleController extends ActionController
 
         // Shortcut
         if ($GLOBALS['BE_USER']->mayMakeShortcut()) {
-            $shortcutButton = $buttonBar->makeShortcutButton()
+            $shortcutButton = $this->componentFactory->createShortcutButton()
                 ->setRouteIdentifier('site_DdDeeplDdDeepl')
                 ->setArguments([
                     'action' => $this->request->getControllerActionName(),
@@ -431,21 +432,21 @@ class BackendModuleController extends ActionController
         $uriBuilder->setRequest($this->request);
 
         $docHeaderComponent = $this->moduleTemplate->getDocHeaderComponent();
-        $docHeaderComponent->setMetaInformation($this->pageInformation);
+        $docHeaderComponent->setPageBreadcrumb($this->pageInformation);
 
         $service = $this->getDeeplTranslationService();
 
         if ($this->pageUid > 0 && $service->isAvailable()) {
             // Show menu only if we have a page id
-            $menu = $docHeaderComponent->getMenuRegistry()->makeMenu();
+            $menu = $this->componentFactory->createMenu();
             $menu->setIdentifier('dd_deepl');
             $actions = [
                 ['action' => 'overview', 'label' => 'overview', 'test' => '/^overview$/'],
                 ['action' => 'glossary', 'label' => 'glossary', 'test' => '/glossary|upload/i'],
             ];
             foreach ($actions as $action) {
-                $item = $menu->makeMenuItem()
-                    ->setTitle(LocalizationUtility::translate('module.' . $action['label'], 'dd_deepl'))
+                $item = $this->componentFactory->createMenuItem()
+                    ->setTitle(LocalizationUtility::translate('module.' . $action['label'], 'DdDeepl'))
                     ->setHref($uriBuilder->uriFor($action['action']))
                     ->setActive(preg_match($action['test'], $this->request->getControllerActionName()))
                 ;
@@ -489,9 +490,7 @@ class BackendModuleController extends ActionController
             return false;
         }
 
-        $glossaries = array_filter($glossaries, function (GlossaryInfo $glossaryInfo) use ($sourceLanguage, $targetLanguage): bool {
-            return $glossaryInfo->sourceLang === $sourceLanguage && $glossaryInfo->targetLang === $targetLanguage;
-        });
+        $glossaries = array_filter($glossaries, fn(GlossaryInfo $glossaryInfo): bool => $glossaryInfo->sourceLang === $sourceLanguage && $glossaryInfo->targetLang === $targetLanguage);
 
         return count($glossaries) >= $this->getDeeplTranslationService()->getConfiguration()->getMaximumNumberOfGlossaries();
     }

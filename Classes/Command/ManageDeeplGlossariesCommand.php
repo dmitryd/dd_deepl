@@ -224,9 +224,7 @@ class ManageDeeplGlossariesCommand extends Command
         $sourceLanguage = $this->input->getOption('source-language');
         $targetLanguage = $this->input->getOption('target-language');
         $languages = $this->deeplTranslationService->getGlossaryLanguages();
-        $filterFunction = function (GlossaryLanguagePair $pair) use ($sourceLanguage, $targetLanguage): bool {
-            return $pair->sourceLang === $sourceLanguage && $pair->targetLang === $targetLanguage;
-        };
+        $filterFunction = (fn(GlossaryLanguagePair $pair): bool => $pair->sourceLang === $sourceLanguage && $pair->targetLang === $targetLanguage);
         if (count(array_filter($languages, $filterFunction)) === 0) {
             $this->output->writeln('Error: source/target combination is not valid');
             $result = false;
@@ -275,7 +273,7 @@ class ManageDeeplGlossariesCommand extends Command
         try {
             $glossaryEntries = $this->deeplTranslationService->getGlossaryEntries($glossaryId);
             $glossaryInfo = $this->deeplTranslationService->getGlossary($glossaryId);
-        } catch (DeepLException $exception) {
+        } catch (DeepLException) {
             $this->output->writeln('Cannot find such glossary. Use the "info" command to find the correct id.');
             return 1;
         }
@@ -323,9 +321,7 @@ class ManageDeeplGlossariesCommand extends Command
             return [];
         }
 
-        return array_filter($glossaries, function (GlossaryInfo $glossaryInfo) use ($sourceLanguage, $targetLanguage): bool {
-            return $glossaryInfo->sourceLang === $sourceLanguage && $glossaryInfo->targetLang === $targetLanguage;
-        });
+        return array_filter($glossaries, fn(GlossaryInfo $glossaryInfo): bool => $glossaryInfo->sourceLang === $sourceLanguage && $glossaryInfo->targetLang === $targetLanguage);
     }
 
     /**

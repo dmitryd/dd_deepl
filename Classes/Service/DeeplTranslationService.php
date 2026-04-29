@@ -80,9 +80,6 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
 
     protected EventDispatcher $eventDispatcher;
 
-    /** @var array<string, mixed> */
-    protected array $deeplOptions = [];
-
     protected FrontendInterface $runtimeCache;
 
     protected DeepLLocalizationScope $deepLLocalizationScope;
@@ -105,11 +102,10 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
      * @param array $deeplOptions
      * @throws \DeepL\DeepLException
      */
-    public function __construct(array $deeplOptions = [], ?FrontendInterface $runtimeCache = null, ?ConfigurationFactory $configurationFactory = null, ?DeepLLocalizationScope $deepLLocalizationScope = null)
+    public function __construct(protected array $deeplOptions = [], ?FrontendInterface $runtimeCache = null, ?ConfigurationFactory $configurationFactory = null, ?DeepLLocalizationScope $deepLLocalizationScope = null)
     {
         $this->configurationFactory = $configurationFactory ?? GeneralUtility::makeInstance(ConfigurationFactory::class);
         $this->eventDispatcher = GeneralUtility::makeInstance(EventDispatcher::class);
-        $this->deeplOptions = $deeplOptions;
         $this->runtimeCache = $runtimeCache ?? GeneralUtility::makeInstance(CacheManager::class)->getCache('runtime');
         $this->deepLLocalizationScope = $deepLLocalizationScope ?? GeneralUtility::makeInstance(DeepLLocalizationScope::class);
 
@@ -181,7 +177,7 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
                 $this->logger?->error(
                     sprintf(
                         'Exception %s while fetching DeepL languages. Code %d, message "%s". Stack: %s',
-                        get_class($exception),
+                        $exception::class,
                         $exception->getCode(),
                         $exception->getMessage(),
                         $exception->getTraceAsString()
@@ -241,7 +237,7 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
      * @throws \DeepL\DeepLException
      * @internal
      */
-    public function deleteGlossary(string $glossaryId)
+    public function deleteGlossary(string $glossaryId): void
     {
         $this->getTranslator()->deleteGlossary($glossaryId);
     }
@@ -323,7 +319,7 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
                     $this->logger?->error(
                         sprintf(
                             'DeepL is not available. Class: %s, code %d, message "%s". Stack: %s',
-                            get_class($exception),
+                            $exception::class,
                             $exception->getCode(),
                             $exception->getMessage(),
                             $exception->getTraceAsString()
@@ -647,7 +643,7 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
                 $this->logger?->debug(
                     sprintf(
                         'Exception %s, code %d, message: "%s" while fetching datas tructure for %s.%s',
-                        get_class($exception),
+                        $exception::class,
                         $exception->getCode(),
                         $exception->getMessage(),
                         $tableName,
@@ -725,7 +721,7 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
     {
         $configuration = $this->getConfiguration();
         if (!$configuration->isConfigured()) {
-            throw new DeepLException('DeepL is not configured for this site');
+            throw new DeepLException('DeepL is not configured for this site', 1387411802);
         }
 
         $cacheIdentifier = md5($configuration->getCacheIdentifier() . $configuration->getApiKey());
@@ -806,9 +802,9 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
                     }
                     $site = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($pageId);
                     $result = $site->getLanguageById($record[$languageFieldName]);
-                } catch (SiteNotFoundException $exception) {
+                } catch (SiteNotFoundException) {
                     // Nothing to do, record is outside of sites
-                } catch (\InvalidArgumentException $exception) {
+                } catch (\InvalidArgumentException) {
                     // Nothing to do - language does not exist on the site but the record has it
                 }
             }
@@ -1034,7 +1030,7 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
 
         $tools = GeneralUtility::makeInstance(FlexFormTools::class);
         /** @var FlexFormTools $tools */
-        $fieldValue = $tools->flexArray2Xml($fields, true);
+        $fieldValue = $tools->flexArray2Xml($fields);
 
         return $fieldValue;
     }
