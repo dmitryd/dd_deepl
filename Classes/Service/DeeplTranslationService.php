@@ -57,6 +57,7 @@ use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Localization\Locale;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
@@ -83,6 +84,7 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
     protected FrontendInterface $runtimeCache;
 
     protected DeepLLocalizationScope $deepLLocalizationScope;
+    protected TcaSchemaFactory $tcaSchemaFactory;
 
     protected ?Site $site = null;
 
@@ -108,6 +110,7 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
         $this->eventDispatcher = GeneralUtility::makeInstance(EventDispatcher::class);
         $this->runtimeCache = $runtimeCache ?? GeneralUtility::makeInstance(CacheManager::class)->getCache('runtime');
         $this->deepLLocalizationScope = $deepLLocalizationScope ?? GeneralUtility::makeInstance(DeepLLocalizationScope::class);
+        $this->tcaSchemaFactory = GeneralUtility::makeInstance(TcaSchemaFactory::class);
 
         if (!Environment::isComposerMode()) {
             $message = $GLOBALS['LANG']->sL('LLL:EXT:dd_deepl/Resources/Private/Language/locallang.xlf:not_composer');
@@ -636,9 +639,10 @@ class DeeplTranslationService implements SingletonInterface, LoggerAwareInterfac
                     $GLOBALS['TCA'][$tableName]['columns'][$fieldName],
                     $tableName,
                     $fieldName,
-                    $databaseRow
+                    $databaseRow,
+                    $this->tcaSchemaFactory->get($tableName),
                 );
-                $dataStructureArray = $flexFormTools->parseDataStructureByIdentifier($dataStructureIdentifier);
+                $dataStructureArray = $flexFormTools->parseDataStructureByIdentifier($dataStructureIdentifier, $this->tcaSchemaFactory->get($tableName));
             } catch (\Exception $exception) {
                 $this->logger?->debug(
                     sprintf(
