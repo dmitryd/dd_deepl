@@ -4,7 +4,7 @@
 	"description": "A TYPO3 CMS extension to translate pages, content and records with DeepL",
 	"license": "GPL-2.0-or-later",
 	"require": {
-		"php": ">=8.2.0,<8.5.0",
+		"php": ">=8.2.0,<8.6.0",
 		"typo3/cms-core": "^14.3",
 		"typo3/cms-backend": "*",
 		"deeplcom/deepl-php": "^1.5",
