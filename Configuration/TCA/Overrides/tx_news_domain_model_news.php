@@ -7,7 +7,9 @@ if (\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::isLoaded('news')) {
             'organizer_simple',
         ];
         foreach ($fields as $field) {
-            $GLOBALS['TCA']['tx_news_domain_model_news']['columns'][$field]['translateWithDeepl'] = false;
+            if ($GLOBALS['TCA']['tx_news_domain_model_news']['columns'][$field] ?? false) {
+                $GLOBALS['TCA']['tx_news_domain_model_news']['columns'][$field]['translateWithDeepl'] = false;
+            }
         }
     });
 }

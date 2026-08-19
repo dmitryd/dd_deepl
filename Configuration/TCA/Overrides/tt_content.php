@@ -7,6 +7,8 @@ call_user_func(function () {
         'table_local',
     ];
     foreach ($fields as $field) {
-        $GLOBALS['TCA']['tt_content']['columns'][$field]['translateWithDeepl'] = false;
+        if ($GLOBALS['TCA']['tt_content']['columns'][$field] ?? false) {
+            $GLOBALS['TCA']['tt_content']['columns'][$field]['translateWithDeepl'] = false;
+        }
     }
 });

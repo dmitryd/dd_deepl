@@ -7,6 +7,8 @@ call_user_func(function () {
         'TSconfig',
     ];
     foreach ($fields as $field) {
-        $GLOBALS['TCA']['pages']['columns'][$field]['translateWithDeepl'] = false;
+        if ($GLOBALS['TCA']['pages']['columns'][$field] ?? false) {
+            $GLOBALS['TCA']['pages']['columns'][$field]['translateWithDeepl'] = false;
+        }
     }
 });
