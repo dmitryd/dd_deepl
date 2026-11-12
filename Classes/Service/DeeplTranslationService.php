@@ -449,8 +449,11 @@ class DeeplTranslationService implements SingletonInterface
     {
         $options = [
             TranslateTextOptions::PRESERVE_FORMATTING => true,
-            TranslateTextOptions::TAG_HANDLING => 'html',
         ];
+        // In HTML mode DeepL returns "&" as "&amp;", which breaks plain text fields
+        if (preg_match('/<[a-z!\/]|&(?:[a-z]+|#\d+|#x[\da-f]+);/i', $text)) {
+            $options[TranslateTextOptions::TAG_HANDLING] = 'html';
+        }
         [$sourceLanguageForGlossary] = explode('-', $sourceLanguage);
         [$targetLanguageForGlossary] = explode('-', $targetLanguage);
         $glossary = $this->configuration->getGlossaryForLanguagePair($sourceLanguageForGlossary, $targetLanguageForGlossary);
